@@ -8,7 +8,7 @@ __constant sampler_t linear = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO
 __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write_only image2d_t valsNext)
 {
 	//We'll pick a time step
-	float dt = 1.0f / 60.0f;
+	float dt = 1.0f / 30.0f;
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	float2 x_n = (float2)(coord.x, coord.y);
 
@@ -18,9 +18,6 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write
 
 	//Now sample the value where we "started" and set the next value at x_n to that one
 	//We use the linear sampler to get linear interpolation at the traceposition for free
-	//float4 tVal = read_imagef(vals, linear, x_nS);
-	//float4 tVal = (float4)(0.5f, 0.0f, 0.0f, 1.0f);
-	//write_imagef(valsNext, coord, tVal);
-	float4 tVal = read_imagef(vals, nearest, coord);
+	float4 tVal = read_imagef(vals, nearest, x_nS);
 	write_imagef(valsNext, coord, tVal);
 }

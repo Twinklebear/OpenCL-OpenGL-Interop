@@ -132,7 +132,7 @@ GL::Texture clTweakTexture(){
 		//Setup cl images and velocity buffers
 		cl::Image2DGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
 		cl::Image2DGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
-		int velocity[2] = { 10.0, 10.0 };
+		float velocity[2] = { 100.0f, 0.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 
 		kernel.setArg(0, velBuf);
