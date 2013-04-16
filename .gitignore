@@ -50,6 +50,7 @@ Release/
 *.dotCover
 *.tlog
 *.lastbuildstate
+*.unsuccessfulbuild
 *.idb
 
 ## TODO: If you have NuGet Package Restore enabled, uncomment this

@@ -2,9 +2,7 @@
 #include <stdexcept>
 #include <memory>
 #include <SDL.h>
-#include <SDL_image.h>
 #include <SDL_opengl.h>
-#include <SDL_syswm.h>
 #include "glfunctions.h"
 #include "glvertexarray.h"
 #include "glprogram.h"
@@ -56,7 +54,6 @@ void Window::Init(){
     //initialize all SDL subsystems
     if (SDL_Init(SDL_INIT_EVERYTHING) == -1)
 		throw std::runtime_error("SDL Init Failed");
-	IMG_Init(IMG_INIT_PNG);
 }
 void Window::Quit(){
     SDL_Quit();
