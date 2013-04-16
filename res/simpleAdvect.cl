@@ -9,7 +9,7 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write
 {
 	//We'll pick a time step
 	float dt = 1.0f / 60.0f;
-	int2 coord = (int2)(get_global_id(0) / 2, get_global_id(1) / 2);
+	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	float2 x_n = (float2)(coord.x, coord.y);
 
 	//We take only s01 since we're doing 2d, x/y values
@@ -21,6 +21,6 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write
 	//float4 tVal = read_imagef(vals, linear, x_nS);
 	//float4 tVal = (float4)(1.0f, 0.0f, 0.0f, 1.0f);
 	//write_imagef(valsNext, coord, tVal);
-	uint4 tVal = read_imageui(vals, linear, coord);
-	write_imageui(valsNext, coord, tVal);
+	float4 tVal = read_imagef(vals, nearest, coord);
+	write_imagef(valsNext, coord, tVal);
 }
