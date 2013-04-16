@@ -6,7 +6,7 @@ __constant sampler_t linear = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO
 
 //For this simple test we'll just take a vector as the velocity
 __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals,
-	write_only image2d_t valsNext)
+	write_only image2d_t valsNext, __global float4 *dataOut)
 {
 	//We'll pick a time step
 	float dt = 1.0f / 30.0f;
@@ -20,6 +20,10 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals,
 	//Now sample the value where we "started" and set the next value at x_n to that one
 	//We use the linear sampler to get linear interpolation at the traceposition for free
 	float4 tVal = read_imagef(vals, nearest, x_nS);
+	//Why can't I do this on Nvidia?
+	//float4 tVal = (float4)(0.5f, 0.0f, 0.0f, 1.0f);
 	write_imagef(valsNext, coord, tVal);
-	//Pixel colors are RGBA with values 0.0f-1.0f
+	//Pixel colors are RGBA with values 0.0f-1.0f on Intel, but what is Nvida doing?
+	//I don't get the same results just writing what I though was red
+	dataOut[coord.x + coord.y] = tVal;
 }

@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include <CL/cl.hpp>
@@ -139,10 +140,13 @@ GL::Texture clTweakTexture(){
 #endif
 		float velocity[2] = { 200.0f, 0.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
+		const size_t n = 256 * 256 * 4;
+		cl::Buffer dataOut = tiny.Buffer(CL::MEM::WRITE_ONLY, n * sizeof(float));
 
 		kernel.setArg(0, velBuf);
 		kernel.setArg(1, clInit);
 		kernel.setArg(2, clFinal);
+		kernel.setArg(3, dataOut);
 		//Acquire the GL objects
 		std::vector<cl::Memory> glObjs;
 		glObjs.push_back(clInit);
@@ -161,6 +165,22 @@ GL::Texture clTweakTexture(){
 		//release GL objects & wait for it to finish before doing anything else
 		tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
 		tiny.mQueue.finish();
+
+		//read the pixel data
+		float *pixels = new float[n];
+		for (size_t i = 0; i < n; ++i)
+			pixels[i] = 0.0f;
+
+		tiny.ReadData(dataOut, n * sizeof(float), pixels);
+		for (size_t i = 0; i < n / 256; ++i){
+			if (i % 4 == 0 && i != 0)
+				std::cout << " | ";
+			if (i % (4 * 4) == 0 && i != 0)
+				std::cout << "\n";
+			std::cout << std::setprecision(3) << std::setw(6) << pixels[i] << " ";
+		}
+		std::cout << std::endl;
+
 	}
 	catch (cl::Error err){
 		std::cout << "Error! " << err.what() << " code: " << err.err() << std::endl;
