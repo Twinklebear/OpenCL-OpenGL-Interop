@@ -21,6 +21,6 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write
 	//float4 tVal = read_imagef(vals, linear, x_nS);
 	//float4 tVal = (float4)(1.0f, 0.0f, 0.0f, 1.0f);
 	//write_imagef(valsNext, coord, tVal);
-	//uint4 tVal = (uint4)(0, 0, 0, 255);
-	//write_imageui(valsNext, coord, tVal);
+	uint4 tVal = read_imageui(vals, linear, coord);
+	write_imageui(valsNext, coord, tVal);
 }

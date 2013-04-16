@@ -126,7 +126,7 @@ GL::Texture clTweakTexture(){
 	cl::Kernel kernel = tiny.LoadKernel(program, "simpleAdvect");
 	//Make textures to work with
 	GL::Texture initial("../res/map.png");
-	GL::Texture texture("../res/map.png");
+	GL::Texture texture("../res/blank.png");
 	
 	try {
 		//Setup cl images and velocity buffers

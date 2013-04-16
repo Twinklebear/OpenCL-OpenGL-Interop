@@ -6,8 +6,8 @@
 #include <iostream>
 #include <glm/glm.hpp>
 #include <SDL.h>
-#include <SDL_image.h>
 #include <SDL_opengl.h>
+#include <SOIL.h>
 #include "glfunctions.h"
 #include "util.h"
 
@@ -158,26 +158,8 @@ void Util::LoadMaterials(const std::string &file, std::map<std::string, Material
 	}
 }
 GLuint Util::LoadTexture(const std::string &file){
-	GLuint texId;
-	SDL_Surface *img = nullptr;
-	img = IMG_Load(file.c_str());
-	if (img == nullptr){
-		std::cout << "failed to load: " << file << std::endl;
-		return 0;
-	}
-	
-	glGenTextures(1, &texId);
-	glBindTexture(GL_TEXTURE_2D, texId);
-	//Load in our image
-	int mode = (img->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB);
-	glTexImage2D(GL_TEXTURE_2D, 0, mode, img->w, img->h, 0, mode, GL_UNSIGNED_BYTE, img->pixels);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	GL::GenerateMipmap(GL_TEXTURE_2D);
-
-	return texId;
+	return SOIL_load_OGL_texture(file.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 
+		SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB);
 }
 void Util::capture(const std::string &str, std::vector<glm::vec2> &vect, const std::regex &reg){
 	auto begin = std::sregex_iterator(str.begin(), str.end(), reg);
