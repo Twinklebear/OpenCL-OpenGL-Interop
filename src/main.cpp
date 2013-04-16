@@ -130,8 +130,8 @@ GL::Texture clTweakTexture(){
 	
 	try {
 		//Setup cl images and velocity buffers
-		cl::Image2DGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
-		cl::Image2DGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+		cl::ImageGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		cl::ImageGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
 		float velocity[2] = { 100.0f, 0.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 
@@ -149,7 +149,7 @@ GL::Texture clTweakTexture(){
 
 		//the image is 256x256 TODO: add this information to the texture class
 		//and the preferred work group size is 32
-		cl::NDRange local(32, 32);
+		cl::NDRange local(16, 16);
 		cl::NDRange global(256, 256);
 		tiny.RunKernel(kernel, local, global);
 		//release GL objects & wait for it to finish before doing anything else

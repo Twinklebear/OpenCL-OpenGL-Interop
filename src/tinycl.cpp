@@ -86,8 +86,8 @@ cl::Image2D CL::TinyCL::Image2d(MEM mem, cl::ImageFormat format, int w, int h, c
 		throw e;
 	}
 }
-cl::Image2DGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
-	return cl::Image2DGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
+cl::ImageGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
+	return cl::ImageGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
 }
 void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data){
 	try {

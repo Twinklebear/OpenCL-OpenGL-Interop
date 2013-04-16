@@ -67,11 +67,13 @@ namespace CL {
 			cl::size_t<3> region = cl::size_t<3>(), void *pixels = nullptr);
 		/*
 		* Create an image from a GL::Texture
+		* TODO: Does cl::ImageGL exist on the Nvidia SDK? Can I just swap out
+		* for the 1.1 C++ header from khronos?
 		* @param mem Type of memory the image is (read/write)
 		* @param texture The texture to use
 		* @return the cl::Image2DGL corresponding to the texture
 		*/
-		cl::Image2DGL ImageFromTexture(MEM mem, GL::Texture &tex);
+		cl::ImageGL ImageFromTexture(MEM mem, GL::Texture &tex);
 		/*
 		* Write some data to a buffer
 		* @param buf The buffer to write too
