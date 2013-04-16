@@ -39,9 +39,9 @@ cl::Kernel CL::TinyCL::LoadKernel(const cl::Program &prog, std::string kernel){
 	try {
 		cl::Kernel kernel(prog, kernel.c_str());
 		std::cout << "Kernel info--\n"
-			<< "work group size: " << kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(mDevices.at(0)) << "\n"
+			<< "max work group size: " << kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(mDevices.at(0)) << "\n"
 			<< "preferred work group size: " 
-			<< kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(mDevices.at(0)) << "\n"
+			<< kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(mDevices.at(0))
 			<< std::endl;
 		return kernel;
 	}
@@ -86,9 +86,15 @@ cl::Image2D CL::TinyCL::Image2d(MEM mem, cl::ImageFormat format, int w, int h, c
 		throw e;
 	}
 }
+#ifdef CL_VERSION_1_2
 cl::ImageGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
 	return cl::ImageGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
 }
+#else
+cl::Image2DGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
+	return cl::Image2DGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
+}
+#endif
 void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data){
 	try {
 		mQueue.enqueueReadBuffer(buf, CL_TRUE, 0, dataSize, data);

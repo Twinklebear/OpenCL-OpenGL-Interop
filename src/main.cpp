@@ -129,9 +129,14 @@ GL::Texture clTweakTexture(){
 	GL::Texture texture("../res/blank.png");
 	
 	try {
-		//Setup cl images and velocity buffers
+		//Setup cl images and velocity buffer
+#ifdef CL_VERSION_1_2
 		cl::ImageGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
 		cl::ImageGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+#else
+		cl::Image2DGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		cl::Image2DGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+#endif
 		float velocity[2] = { 200.0f, 0.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 
@@ -148,8 +153,9 @@ GL::Texture clTweakTexture(){
 		tiny.mQueue.enqueueAcquireGLObjects(&glObjs);
 
 		//the image is 256x256 TODO: add this information to the texture class
-		//and the preferred work group size is 32
-		cl::NDRange local(16, 16);
+		//Query and use the preferred work group size for our local size
+		size_t workSize = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(tiny.mDevices.at(0));
+		cl::NDRange local(workSize, workSize);
 		cl::NDRange global(256, 256);
 		tiny.RunKernel(kernel, local, global);
 		//release GL objects & wait for it to finish before doing anything else
