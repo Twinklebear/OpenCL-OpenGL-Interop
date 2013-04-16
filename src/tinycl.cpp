@@ -148,12 +148,22 @@ void CL::TinyCL::SelectInteropDevice(DEVICE dev){
 		cl::Platform::get(&mPlatforms);
 		//Query the devices for the type desired
 		mPlatforms.at(0).getDevices(dev, &mDevices);
+#ifdef _WIN32
 		cl_context_properties properties[] = {
 			CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
 			CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
 			CL_CONTEXT_PLATFORM, (cl_context_properties)(mPlatforms[0])(),
 			0
 		};
+#endif
+#ifdef __linux__
+		cl_context_properties properties[] = {
+			CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
+			CL_WGL_HDC_KHR, (cl_context_properties)glXGetCurrentDisplay(),
+			CL_CONTEXT_PLATFORM, (cl_context_properties)(mPlatforms[0])(),
+			0
+		};
+#endif
 		mContext = cl::Context(mDevices, properties);
 		//Grab the OpenGL device
 		mDevices = mContext.getInfo<CL_CONTEXT_DEVICES>();
