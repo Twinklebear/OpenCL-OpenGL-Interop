@@ -19,9 +19,10 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals,
 
 	//Now sample the value where we "started" and set the next value at x_n to that one
 	//We use the linear sampler to get linear interpolation at the traceposition for free
-	float4 tVal = read_imagef(vals, nearest, x_nS);
-	//Why can't I do this on Nvidia?
-	//float4 tVal = (float4)(0.5f, 0.0f, 0.0f, 1.0f);
+	//This is ok on Nvidia
+	float4 tVal = read_imagef(vals, nearest, x_nS) * (float4)(1.0f, 0.3f, 0.3f, 1.0f);
+	//But why can't I do this on Nvidia?
+	//float4 tVal = (float4)(1.0f, 0.0f, 0.0f, 1.0f);
 	write_imagef(valsNext, coord, tVal);
 	//Pixel colors are RGBA with values 0.0f-1.0f on Intel, but what is Nvida doing?
 	//I don't get the same results just writing what I though was red
