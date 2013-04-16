@@ -5,7 +5,8 @@ __constant sampler_t linear = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO
 	| CLK_FILTER_LINEAR;
 
 //For this simple test we'll just take a vector as the velocity
-__kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write_only image2d_t valsNext)
+__kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals,
+	write_only image2d_t valsNext)
 {
 	//We'll pick a time step
 	float dt = 1.0f / 30.0f;
@@ -20,4 +21,5 @@ __kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals, write
 	//We use the linear sampler to get linear interpolation at the traceposition for free
 	float4 tVal = read_imagef(vals, nearest, x_nS);
 	write_imagef(valsNext, coord, tVal);
+	//Pixel colors are RGBA with values 0.0f-1.0f
 }
