@@ -1,7 +1,7 @@
-__constant sampler_t nearest = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP_TO_EDGE
+__constant sampler_t nearest = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE
 	| CLK_FILTER_NEAREST;
 
-__constant sampler_t linear = CLK_NORMALIZED_COORDS_TRUE | CLK_ADDRESS_CLAMP_TO_EDGE
+__constant sampler_t linear = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO_EDGE
 	| CLK_FILTER_LINEAR;
 
 //For this simple test we'll just take a vector as the velocity
