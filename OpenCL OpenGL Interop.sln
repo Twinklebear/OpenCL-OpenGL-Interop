@@ -2,6 +2,9 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCL OpenGL Interop", "OpenCL OpenGL Interop\OpenCL OpenGL Interop.vcxproj", "{2FD15742-793A-445C-8CA5-0D5C0940B84F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E8F91025-4187-44A4-A8FB-3B65DB3E7A97} = {E8F91025-4187-44A4-A8FB-3B65DB3E7A97}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenGL-Wrapper", "OpenGL-Wrapper\OpenGL-Wrapper\OpenGL-Wrapper.vcxproj", "{E8F91025-4187-44A4-A8FB-3B65DB3E7A97}"
 EndProject
