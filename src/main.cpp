@@ -143,11 +143,11 @@ GL::Texture clTweakTexture(){
 	
 	try {
 #ifdef CL_VERSION_1_2
-		cl::ImageGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
-		cl::ImageGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+		cl::ImageGL inImg = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		cl::ImageGL outImg = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
 #else
-		cl::Image2DGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
-		cl::Image2DGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+		cl::Image2DGL inImg = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		cl::Image2DGL outImg = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
 #endif
 		float velocity[2] = { 200.0f, 0.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
@@ -155,13 +155,13 @@ GL::Texture clTweakTexture(){
 		cl::Buffer dataOut = tiny.Buffer(CL::MEM::WRITE_ONLY, n * sizeof(float));
 
 		kernel.setArg(0, velBuf);
-		kernel.setArg(1, clInit);
-		kernel.setArg(2, clFinal);
+		kernel.setArg(1, inImg);
+		kernel.setArg(2, outImg);
 		kernel.setArg(3, dataOut);
 		//Acquire the GL objects
 		std::vector<cl::Memory> glObjs;
-		glObjs.push_back(clInit);
-		glObjs.push_back(clFinal);
+		glObjs.push_back(inImg);
+		glObjs.push_back(outImg);
 
 		//Let OpenGL wrap up anything it's doing before we get the objects
 		glFinish();
@@ -210,8 +210,8 @@ GL::Texture shrinkTexture(){
 
 	try {
 #ifdef CL_VERSION_1_2
-		cl::ImageGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
-		cl::ImageGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+		cl::ImageGL inImg = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		cl::ImageGL outImg = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
 #else
 		cl::Image2DGL inImg = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
 		//Why does this throw invalid GL object if i load blanksmall as the texture?
