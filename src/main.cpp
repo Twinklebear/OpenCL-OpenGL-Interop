@@ -9,13 +9,13 @@
 #include <CL/cl.hpp>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
-#include "window.h"
-#include "util.h"
-#include "glfunctions.h"
-#include "glshader.h"
-#include "glprogram.h"
-#include "glvertexbuffer.h"
-#include "glvertexarray.h"
+#include <window.h>
+#include <util.h>
+#include <glfunctions.h>
+#include <glshader.h>
+#include <glprogram.h>
+#include <glvertexbuffer.h>
+#include <glvertexarray.h>
 #include "tinycl.h"
 
 GL::VertexBuffer testClGl();

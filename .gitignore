@@ -35,6 +35,7 @@ Release/
 *.ilk
 *.meta
 *.obj
+*.lib
 *.pch
 *.pdb
 *.pgc

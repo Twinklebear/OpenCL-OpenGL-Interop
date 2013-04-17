@@ -1,0 +1,3 @@
+[submodule "OpenGL-Wrapper"]
+	path = OpenGL-Wrapper
+	url = git@github.com:Twinklebear/OpenGL-Wrapper.git

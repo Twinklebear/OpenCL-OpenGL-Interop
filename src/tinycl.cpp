@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <CL/opencl.h>
 #include <CL/cl.hpp>
-#include "util.h"
+#include <util.h>
 #include "tinycl.h"
 
 CL::TinyCL::TinyCL(DEVICE dev, bool interop){
