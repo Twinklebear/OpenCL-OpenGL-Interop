@@ -18,8 +18,20 @@
 #include <glvertexarray.h>
 #include "tinycl.h"
 
+/*
+* This function is a simple test of interop with OpenGL VBOs
+* we make a VBO then use a kernel to fill in the vertex data
+*/
 GL::VertexBuffer testClGl();
+/*
+* This function advects a texture by the desired velocity over 
+* a single time step
+*/
 GL::Texture clTweakTexture();
+/*
+* This function will shrink a texture down to a smaller size
+*/
+GL::Texture shrinkTexture();
 
 int main(int argc, char** argv){
 	try {
@@ -36,7 +48,7 @@ int main(int argc, char** argv){
 	Util::LoadObj("../res/square.obj", verts, indices);
 	
 	//Load texture from cl program that tweaks it some
-	GL::Texture texture = clTweakTexture();
+	GL::Texture texture = shrinkTexture();
 
 	GL::VertexBuffer vbo(verts);
 	GL::VertexArray vao;
@@ -130,7 +142,6 @@ GL::Texture clTweakTexture(){
 	GL::Texture texture("../res/blank.png");
 	
 	try {
-		//Setup cl images and velocity buffer
 #ifdef CL_VERSION_1_2
 		cl::ImageGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
 		cl::ImageGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
@@ -184,6 +195,55 @@ GL::Texture clTweakTexture(){
 	}
 	catch (cl::Error err){
 		std::cout << "Error! " << err.what() << " code: " << err.err() << std::endl;
+	}
+	return texture;
+}
+GL::Texture shrinkTexture(){
+	CL::TinyCL tiny(CL::DEVICE::GPU, true);
+	cl::Program program = tiny.LoadProgram("../res/shrinkImage.cl");
+	cl::Kernel kernel = tiny.LoadKernel(program, "bilinearResample");
+	//Make textures to work with
+	GL::Texture initial("../res/map.png");
+	//I should add the ability to allocate empty images? Or is that a CL thing? Hmmm
+	//Can I get a texture from a cl::ImageGL?
+	GL::Texture texture("../res/blanksmall.png");
+
+	try {
+#ifdef CL_VERSION_1_2
+		cl::ImageGL clInit = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		cl::ImageGL clFinal = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+#else
+		cl::Image2DGL inImg = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
+		//Why does this throw invalid GL object if i load blanksmall as the texture?
+		cl::Image2DGL outImg = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
+#endif
+		kernel.setArg(0, inImg);
+		kernel.setArg(1, outImg);
+		//set the ratio to 4 (blanksmall is 64x64, map is 256x256), so 4 map pixels per small
+		int ratio = 4;
+		kernel.setArg(2, sizeof(int), &ratio);
+
+		std::vector<cl::Memory> glObjs;
+		glObjs.push_back(inImg);
+		glObjs.push_back(outImg);
+
+		//Let OpenGL wrap up anything it's doing before we get the objects
+		glFinish();
+		tiny.mQueue.enqueueAcquireGLObjects(&glObjs);
+
+		//the image is 256x256 TODO: add this information to the texture class
+		//Query and use the preferred work group size for our local size
+		size_t workSize = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(tiny.mDevices.at(0));
+		cl::NDRange local(workSize, workSize);
+		//Here we now use the size of the small image
+		cl::NDRange global(64, 64);
+		tiny.RunKernel(kernel, local, global);
+		//release GL objects & wait for it to finish before doing anything else
+		tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
+		tiny.mQueue.finish();
+	}
+	catch (const cl::Error &e){
+		std::cout << "cl::Error: " << e.what() << " code: " << e.err() << std::endl;
 	}
 	return texture;
 }
