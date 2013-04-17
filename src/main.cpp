@@ -27,7 +27,7 @@ GL::VertexBuffer testClGl();
 * This function advects a texture by the desired velocity over 
 * a single time step
 */
-GL::Texture clTweakTexture();
+GL::Texture advectTexture();
 /*
 * This function will shrink a texture down to a smaller size
 */
@@ -48,7 +48,7 @@ int main(int argc, char** argv){
 	Util::LoadObj("../res/square.obj", verts, indices);
 	
 	//Load texture from cl program that tweaks it some
-	GL::Texture texture = shrinkTexture();
+	GL::Texture texture = advectTexture();
 
 	GL::VertexBuffer vbo(verts);
 	GL::VertexArray vao;
@@ -133,7 +133,7 @@ GL::VertexBuffer testClGl(){
 	}
 	return vbo;
 }
-GL::Texture clTweakTexture(){
+GL::Texture advectTexture(){
 	CL::TinyCL tiny(CL::DEVICE::GPU, true);
 	cl::Program program = tiny.LoadProgram("../res/simpleAdvect.cl");
 	cl::Kernel kernel = tiny.LoadKernel(program, "simpleAdvect");
@@ -149,15 +149,12 @@ GL::Texture clTweakTexture(){
 		cl::Image2DGL inImg = tiny.ImageFromTexture(CL::MEM::READ_ONLY, initial);
 		cl::Image2DGL outImg = tiny.ImageFromTexture(CL::MEM::WRITE_ONLY, texture);
 #endif
-		float velocity[2] = { 200.0f, 0.0f };
+		float velocity[2] = { 400.0f, 400.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
-		const size_t n = 256 * 256 * 4;
-		cl::Buffer dataOut = tiny.Buffer(CL::MEM::WRITE_ONLY, n * sizeof(float));
 
 		kernel.setArg(0, velBuf);
 		kernel.setArg(1, inImg);
 		kernel.setArg(2, outImg);
-		kernel.setArg(3, dataOut);
 		//Acquire the GL objects
 		std::vector<cl::Memory> glObjs;
 		glObjs.push_back(inImg);
@@ -176,22 +173,6 @@ GL::Texture clTweakTexture(){
 		//release GL objects & wait for it to finish before doing anything else
 		tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
 		tiny.mQueue.finish();
-
-		//read the pixel data
-		float *pixels = new float[n];
-		for (size_t i = 0; i < n; ++i)
-			pixels[i] = 0.0f;
-
-		tiny.ReadData(dataOut, n * sizeof(float), pixels);
-		for (size_t i = 0; i < n / 256; ++i){
-			if (i % 4 == 0 && i != 0)
-				std::cout << " | ";
-			if (i % (4 * 4) == 0 && i != 0)
-				std::cout << "\n";
-			std::cout << std::setprecision(3) << std::setw(6) << pixels[i] << " ";
-		}
-		std::cout << std::endl;
-
 	}
 	catch (cl::Error err){
 		std::cout << "Error! " << err.what() << " code: " << err.err() << std::endl;
