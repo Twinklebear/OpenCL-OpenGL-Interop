@@ -5,11 +5,9 @@ __constant sampler_t linear = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP_TO
 	| CLK_FILTER_LINEAR;
 
 //For this simple test we'll just take a vector as the velocity
-__kernel void simpleAdvect(__global float2 *vel, read_only image2d_t vals,
+__kernel void simpleAdvect(float dt, __global float2 *vel, read_only image2d_t vals,
 	write_only image2d_t valsNext)
 {
-	//We'll pick a time step
-	float dt = 1.0f / 30.0f;
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	float2 x_n = (float2)(coord.x, coord.y);
 

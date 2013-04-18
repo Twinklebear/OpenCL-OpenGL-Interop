@@ -22,7 +22,6 @@ __kernel void advect(read_only image2d_t u, read_only image2d_t vals,
 	float2 u_xnHalf = read_imagef(u, nearest, x_nHalf).xy;
 	float2 x_nS = x_n - dt * u_xnHalf;
 
-
 	//Now sample the value where we "started" and set the next value at x_n to that one
 	//We use the linear sampler to get linear interpolation at the traceposition for free
 	float4 tVal = read_imagef(vals, linear, x_nS);

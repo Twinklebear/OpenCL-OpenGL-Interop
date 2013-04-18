@@ -16,6 +16,7 @@
 #include <glprogram.h>
 #include <glvertexbuffer.h>
 #include <glvertexarray.h>
+#include <timer.h>
 #include "tinycl.h"
 
 /*
@@ -32,6 +33,11 @@ GL::Texture advectTexture();
 * This function will shrink a texture down to a smaller size
 */
 GL::Texture shrinkTexture();
+/*
+* This demo will move a texture with some velocity and draw the 
+* the texture as it moves in real time
+*/
+void liveAdvectTexture();
 
 int main(int argc, char** argv){
 	try {
@@ -40,6 +46,8 @@ int main(int argc, char** argv){
 	catch (const std::runtime_error &e){
 		std::cout << e.what() << std::endl;
 	}
+	liveAdvectTexture();
+	return 0;
 	Window window("OpenGL/OpenCL Interop");
 
 	//Load a square plane model
@@ -152,9 +160,11 @@ GL::Texture advectTexture(){
 		float velocity[2] = { 400.0f, 400.0f };
 		cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 
-		kernel.setArg(0, velBuf);
-		kernel.setArg(1, inImg);
-		kernel.setArg(2, outImg);
+		float dt = 1.0f / 60.0f;
+		kernel.setArg(0, sizeof(float), &dt);
+		kernel.setArg(1, velBuf);
+		kernel.setArg(2, inImg);
+		kernel.setArg(3, outImg);
 		//Acquire the GL objects
 		std::vector<cl::Memory> glObjs;
 		glObjs.push_back(inImg);
@@ -227,4 +237,134 @@ GL::Texture shrinkTexture(){
 		std::cout << "cl::Error: " << e.what() << " code: " << e.err() << std::endl;
 	}
 	return texture;
+}
+void liveAdvectTexture(){
+	Window window("Realtime Texture Advection");
+	//Set an fps cap
+	const float FPS = 60.0f;
+
+	//Load and setup a square plane that we can draw the texture too
+	std::vector<glm::vec3> verts;
+	std::vector<unsigned short> indices;
+	Util::LoadObj("../res/square.obj", verts, indices);
+	GL::VertexBuffer vbo(verts);
+	GL::VertexArray vao;
+	vao.Reference(vbo, "vbo");
+	vao.ElementBuffer(indices);
+	//Setup program
+	GL::Program prog("../res/shader.v.glsl", "../res/shader.f.glsl");
+	//Setup the attributes
+	vao.SetAttribPointer("vbo", prog.GetAttribute("position"), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(glm::vec3), 0);
+	vao.SetAttribPointer("vbo", prog.GetAttribute("texIn"), 3, GL_FLOAT, GL_FALSE, 
+		3 * sizeof(glm::vec3), (void*)(sizeof(glm::vec3) * 2));
+
+	glm::mat4 view = glm::lookAt<float>(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
+	glm::mat4 proj = glm::perspective(60.0f, (float)(window.Box().w) /  (float)(window.Box().h), 0.1f, 100.0f);
+	glm::mat4 model = glm::scale(0.5f, 0.5f, 1.0f);
+	glm::mat4 mvp = proj * view * model;
+	prog.UniformMat4x4("mvp", mvp);
+
+	//Setup our OpenCL context + program and kernel
+	CL::TinyCL tiny(CL::DEVICE::GPU, true);
+	cl::Program program = tiny.LoadProgram("../res/simpleAdvect.cl");
+	cl::Kernel kernel = tiny.LoadKernel(program, "simpleAdvect");
+	/*
+	* I don't think OpenCL or OpenGL provide a simple method for copying images/textures so 
+	* instead we'll flip the in/out image each step and draw the out image by setting active = out
+	*/
+	//Make textures to work with
+	GL::Texture texA("../res/map.png");
+	GL::Texture texB("../res/blank.png");
+	//Active is the actual texture we will draw
+	GL::Texture active = texB;
+	//Setup our OpenCL data
+#ifdef CL_VERSION_1_2
+	cl::ImageGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
+	cl::ImageGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
+#else
+	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
+	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
+#endif
+	float velocity[2] = { 25.0f, 0.0f };
+	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
+	//Setup our GL objects vector
+	std::vector<cl::Memory> glObjs;
+	glObjs.push_back(imgA);
+	glObjs.push_back(imgB);
+	//The time step and velocity for now will be constant
+	float dt = 1 / FPS;
+	kernel.setArg(0, sizeof(float), &dt); 
+	kernel.setArg(1, velBuf);
+	//Query the preferred work group size
+	size_t workSize = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(tiny.mDevices.at(0));
+	//fixed for now
+	size_t imgSize = 256;
+	cl::NDRange local(workSize, workSize);
+	cl::NDRange global(imgSize, imgSize);
+	//Track the run number so we know which texture to set as in/out and which to draw
+	int run = 0;
+
+	//Our event structure
+	SDL_Event e;
+	//Limit framerate with a timer
+	Timer delta;
+	//For tracking if we want to quit
+	bool quit = false;
+	while (!quit){
+		delta.Start();
+		//Event Polling
+		while (SDL_PollEvent(&e)){
+			//If user closes he window
+			if (e.type == SDL_QUIT)
+				quit = true;
+			//If user presses any key
+			if (e.type == SDL_KEYDOWN){
+				switch (e.key.keysym.sym){
+					//For quitting, escape key
+					case SDLK_ESCAPE:
+						quit = true;
+						break;
+					default:
+						break;
+				}
+			}
+		}
+		//Run the kernel, setting the in/out textures properly. On even runs the output will be
+		//in texB, on odd runs output will be in texA
+		try {
+			//On even runs and the first run texB/imgB is our output, on odd runs it's flipped
+			//Is this really the best way to do this? Maybe there is some faster way to copy the image over
+			//instead of updating this each time
+			if (run % 2 == 0 || run == 0){
+				kernel.setArg(2, imgA);
+				kernel.setArg(3, imgB);
+				active = texB;
+			}
+			else {
+				kernel.setArg(2, imgB);
+				kernel.setArg(3, imgA);
+				active = texA;
+			}
+			glFinish();
+			tiny.mQueue.enqueueAcquireGLObjects(&glObjs);
+
+			tiny.RunKernel(kernel, local, global);
+			
+			tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
+			tiny.mQueue.finish();
+			++run;
+		}
+		catch (const cl::Error &e){
+			std::cout << "Error: " << e.what() << " code: " << e.err() << std::endl;
+		}
+		//RENDERING
+		window.Clear();
+		window.DrawElementsTextured(vao, prog, active, GL_TRIANGLES, vao.NumElements("elem"));
+		window.Present();
+
+		//Cap fps
+		if (delta.Ticks() < 1000 / FPS)
+			SDL_Delay(1000 / FPS - delta.Ticks());
+	}
+	Window::Quit();
 }
