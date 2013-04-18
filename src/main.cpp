@@ -338,6 +338,11 @@ void liveAdvectTexture(){
 						velocity[0] = 100.0f;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
+					case SDLK_r:
+						velocity[0] = 0.0f;
+						velocity[1] = 0.0f;
+						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						break;
 					//Toggle pause
 					case SDLK_SPACE:
 						paused = !paused;
