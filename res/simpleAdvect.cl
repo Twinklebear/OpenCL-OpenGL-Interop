@@ -19,16 +19,16 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	//Wrap x_nS appropriately. Is there no built in function for this?
 	//Or a faster way to do this?
 	//get the width and height so we can wrap the coord around if needed
-	int2 size = get_image_dim(inImg);
+	float2 size = convert_float2(get_image_dim(inImg));
 	//Wrap x, note that we wrap when at size and up because the image is 0 indexed
 	//so 256 is an out of bounds value that should wrap back to 0
 	if (x_nS.x > size.x - 1)
-		x_nS.x = convert_int(x_nS.x) % size.x;
+		x_nS.x = fmod(x_nS.x, size.x);
 	else if (x_nS.x < 0)
 		x_nS.x += size.x;
 	//Wrap y
 	if (x_nS.y > size.y - 1)
-		x_nS.y = convert_int(x_nS.y) % size.y;
+		x_nS.y = fmod(x_nS.y, size.y);
 	else if (x_nS.y < 0)
 		x_nS.y += size.y;
 
