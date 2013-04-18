@@ -285,7 +285,7 @@ void liveAdvectTexture(){
 	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
 	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
 #endif
-	float velocity[2] = { 25.0f, 0.0f };
+	float velocity[2] = { -20.0f, -20.0f };
 	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 	//Setup our GL objects vector
 	std::vector<cl::Memory> glObjs;
@@ -309,7 +309,7 @@ void liveAdvectTexture(){
 	//Limit framerate with a timer
 	Timer delta;
 	//For tracking if we want to quit
-	bool quit = false;
+	bool quit = false, paused = false;
 	while (!quit){
 		delta.Start();
 		//Event Polling
@@ -320,6 +320,27 @@ void liveAdvectTexture(){
 			//If user presses any key
 			if (e.type == SDL_KEYDOWN){
 				switch (e.key.keysym.sym){
+					//So we can change velocity
+					case SDLK_w:
+						velocity[1] = 25.0f;
+						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						break;
+					case SDLK_s:
+						velocity[1] = -25.0f;
+						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						break;
+					case SDLK_a:
+						velocity[0] = -25.0f;
+						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						break;
+					case SDLK_d:
+						velocity[0] = 25.0f;
+						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						break;
+					//Toggle pause
+					case SDLK_SPACE:
+						paused = !paused;
+						break;
 					//For quitting, escape key
 					case SDLK_ESCAPE:
 						quit = true;
@@ -331,31 +352,33 @@ void liveAdvectTexture(){
 		}
 		//Run the kernel, setting the in/out textures properly. On even runs the output will be
 		//in texB, on odd runs output will be in texA
-		try {
-			//On even runs and the first run texB/imgB is our output, on odd runs it's flipped
-			//Is this really the best way to do this? Maybe there is some faster way to copy the image over
-			//instead of updating this each time
-			if (run % 2 == 0 || run == 0){
-				kernel.setArg(2, imgA);
-				kernel.setArg(3, imgB);
-				active = texB;
-			}
-			else {
-				kernel.setArg(2, imgB);
-				kernel.setArg(3, imgA);
-				active = texA;
-			}
-			glFinish();
-			tiny.mQueue.enqueueAcquireGLObjects(&glObjs);
+		if (!paused){
+			try {
+				//On even runs and the first run texB/imgB is our output, on odd runs it's flipped
+				//Is this really the best way to do this? Maybe there is some faster way to copy the image over
+				//instead of updating this each time
+				if (run % 2 == 0 || run == 0){
+					kernel.setArg(2, imgA);
+					kernel.setArg(3, imgB);
+					active = texB;
+				}
+				else {
+					kernel.setArg(2, imgB);
+					kernel.setArg(3, imgA);
+					active = texA;
+				}
+				glFinish();
+				tiny.mQueue.enqueueAcquireGLObjects(&glObjs);
 
-			tiny.RunKernel(kernel, local, global);
+				tiny.RunKernel(kernel, local, global);
 			
-			tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
-			tiny.mQueue.finish();
-			++run;
-		}
-		catch (const cl::Error &e){
-			std::cout << "Error: " << e.what() << " code: " << e.err() << std::endl;
+				tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
+				tiny.mQueue.finish();
+				++run;
+			}
+			catch (const cl::Error &e){
+				std::cout << "Error: " << e.what() << " code: " << e.err() << std::endl;
+			}
 		}
 		//RENDERING
 		window.Clear();
