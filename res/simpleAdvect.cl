@@ -11,6 +11,12 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	float2 x_n = convert_float2(coord);
 
+	float2 v = *vel;
+	if (coord.y > (256.0f / 2.0f))
+		v.x = -v.x;
+	if (coord.x > (256.0f / 2.0f))
+		v.y = -v.y;
+
 	//TODO: Some issue exists with the math that causes +velocity to go much
 	//faster than -velocity
 	//Perform RK2 to traceback the "start" position of this pixel
@@ -20,8 +26,8 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	//float2 k_1 = dt * (*vel);
 	//float2 k_2 = dt * (*vel + k_1 / 2.0f);
 	//Is this RK2 or the version in advect correct? will have to check with book
-	float2 x_nHalf = x_n - 0.5f * dt * (*vel);
-	float2 x_nS = x_nHalf - dt * (*vel);
+	float2 x_nHalf = x_n - 0.5f * dt * v;//(*vel);
+	float2 x_nS = x_nHalf - dt * v;//(*vel);
 	//float2 x_nS = x_n - k_2;
 	//Wrap x_nS appropriately. Is there no built in function for this?
 	//Or a faster way to do this?
