@@ -95,6 +95,13 @@ cl::Image2DGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
 	return cl::Image2DGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
 }
 #endif
+void CL::TinyCL::WriteData(const cl::Buffer &b, size_t dataSize, void *data){
+	mQueue.enqueueWriteBuffer(b, CL_TRUE, 0, dataSize, data);
+}
+void CL::TinyCL::WriteData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
+	//Is 0, 0 right for row/slice pitch?
+	mQueue.enqueueWriteImage(img, CL_TRUE, origin, region, 0, 0, pixels);
+}
 void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data){
 	try {
 		mQueue.enqueueReadBuffer(buf, CL_TRUE, 0, dataSize, data);
