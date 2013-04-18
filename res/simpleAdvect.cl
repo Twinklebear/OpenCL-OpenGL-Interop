@@ -11,7 +11,9 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	float2 x_n = (float2)(coord.x, coord.y);
 
-	//We take only s01 since we're doing 2d, x/y values
+	//TODO: Some issue exists with the math that causes +velocity to go much
+	//faster than -velocity
+	//Perform RK2 to traceback the "start" position of this pixel
 	float2 x_nHalf = x_n - 0.5f * dt * (*vel);
 	float2 x_nS = x_n - dt * (*vel);
 	//Wrap x_nS appropriately. Is there no built in function for this?
@@ -20,8 +22,6 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	int2 size = get_image_dim(inImg);
 	//Wrap x, note that we wrap when at size and up because the image is 0 indexed
 	//so 256 is an out of bounds value that should wrap back to 0
-	//This math is wrong??
-	/*
 	if (x_nS.x > size.x - 1)
 		x_nS.x = convert_int(x_nS.x) % size.x;
 	else if (x_nS.x < 0)
@@ -31,7 +31,7 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 		x_nS.y = convert_int(x_nS.y) % size.y;
 	else if (x_nS.y < 0)
 		x_nS.y += size.y;
-	*/
+
 	//Now sample the value where we "started" and set the next value at x_n to that one
 	//We use the linear sampler to get linear interpolation at the traceposition for free
 	//This is ok on Nvidia

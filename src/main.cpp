@@ -48,6 +48,7 @@ int main(int argc, char** argv){
 	}
 	liveAdvectTexture();
 	return 0;
+
 	Window window("OpenGL/OpenCL Interop");
 
 	//Load a square plane model
@@ -285,15 +286,15 @@ void liveAdvectTexture(){
 	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
 	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
 #endif
-	float velocity[2] = { -20.0f, -20.0f };
+	float velocity[2] = { 0.0f, 0.0f };
 	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 	//Setup our GL objects vector
 	std::vector<cl::Memory> glObjs;
 	glObjs.push_back(imgA);
 	glObjs.push_back(imgB);
-	//The time step and velocity for now will be constant
-	float dt = 1 / FPS;
-	kernel.setArg(0, sizeof(float), &dt); 
+	//The time step will be constant and velocity won't change each step, so set'em now
+	float dt = 1.0f / FPS;
+	kernel.setArg(0, sizeof(float), &dt);
 	kernel.setArg(1, velBuf);
 	//Query the preferred work group size
 	size_t workSize = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(tiny.mDevices.at(0));
@@ -322,19 +323,19 @@ void liveAdvectTexture(){
 				switch (e.key.keysym.sym){
 					//So we can change velocity
 					case SDLK_w:
-						velocity[1] = 25.0f;
+						velocity[1] = 100.0f;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_s:
-						velocity[1] = -25.0f;
+						velocity[1] = -100.0f;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_a:
-						velocity[0] = -25.0f;
+						velocity[0] = -100.0f;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_d:
-						velocity[0] = 25.0f;
+						velocity[0] = 100.0f;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					//Toggle pause
