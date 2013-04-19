@@ -11,10 +11,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\demos.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\tinycl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\demos.h" />
     <ClInclude Include="..\src\tinycl.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

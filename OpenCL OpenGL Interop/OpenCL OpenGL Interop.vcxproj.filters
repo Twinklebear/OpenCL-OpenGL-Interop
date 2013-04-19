@@ -21,9 +21,15 @@
     <ClCompile Include="..\src\tinycl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\demos.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\tinycl.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\demos.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
