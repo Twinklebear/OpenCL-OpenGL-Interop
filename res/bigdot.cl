@@ -1,4 +1,4 @@
-//this kernel will perform a big dot product on arbitrary size vectors
+//this kernel will perform a big dot product on arbitrary size vectors that 4n in size
 __kernel void bigDot(__global float4 *a, __global float4 *b, __global float *out, 
 	int numElem)
 {
