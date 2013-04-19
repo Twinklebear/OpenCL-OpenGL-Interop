@@ -77,9 +77,9 @@ void liveAdvectTexture(){
 	kernel.setArg(0, sizeof(float), &dt);
 	kernel.setArg(1, velBuf);
 	//Query the preferred work group size
-	size_t workSize = kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(tiny.mDevices.at(0));
+	int workSize = tiny.PreferredWorkSize(kernel);
 	//fixed for now
-	size_t imgSize = 256;
+	int imgSize = 256;
 	cl::NDRange local(workSize, workSize);
 	cl::NDRange global(imgSize, imgSize);
 	//Track the run number so we know which texture to set as in/out and which to draw
