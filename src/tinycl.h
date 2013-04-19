@@ -114,6 +114,12 @@ namespace CL {
 		* @param offset The initial offset for each id dimension, default is NullRange, ie no offset
 		*/
 		void RunKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset = cl::NullRange);
+		/*
+		* Get the preferred work group size for some kernel on the device
+		* @param kernel The kernel to get preferred size of
+		* @return Preferred work group size
+		*/
+		int PreferredWorkSize(const cl::Kernel &kernel);
 
 	private:
 		/**

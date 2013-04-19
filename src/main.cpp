@@ -38,8 +38,16 @@ GL::Texture shrinkTexture();
 * the texture as it moves in real time
 */
 void liveAdvectTexture();
+/*
+* Perform a dot product between arbitrary sized vectors
+* This is not an interop program, just a standard math operation
+*/
+void bigDot();
 
 int main(int argc, char** argv){
+	bigDot();
+	return 0;
+
 	try {
 		Window::Init();
 	}
@@ -396,4 +404,58 @@ void liveAdvectTexture(){
 			SDL_Delay(1000 / FPS - delta.Ticks());
 	}
 	Window::Quit();
+}
+void bigDot(){
+	CL::TinyCL tiny(CL::DEVICE::GPU);
+	cl::Program prog = tiny.LoadProgram("../res/bigDot.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "bigDot");
+
+	//Setup the input data
+	const int nElem = 32;
+	float vecA[nElem] = {0};
+	float vecB[nElem] = {0};
+	for (int i = 0; i < nElem; ++i){
+		vecA[i] = i;
+		vecB[i] = nElem - i;
+	}
+	//Print the vectors
+	std::cout << "vect a: ";
+	for (int i = 0; i < nElem; ++i)
+		std::cout << vecA[i] << ", ";
+	std::cout << "\nvect b: ";
+	for (int i = 0; i < nElem; ++i)
+		std::cout << vecB[i] << ", ";
+
+	//Setup cl buffers
+	cl::Buffer bufVecA = tiny.Buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecA);
+	cl::Buffer bufVecB = tiny.Buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecB);
+	//Our out buffer is (nElem / 4) because we process in chunks of 4
+	cl::Buffer bOut = tiny.Buffer(CL::MEM::WRITE_ONLY, (nElem / 4) * sizeof(float));
+
+	kernel.setArg(0, bufVecA);
+	kernel.setArg(1, bufVecB);
+	kernel.setArg(2, bOut);
+	kernel.setArg(3, sizeof(int), (void*)&nElem);
+
+	//Need to process a total of nElem / 4 items
+	int prefSize = tiny.PreferredWorkSize(kernel);
+	cl::NDRange local;
+	if (nElem / 4 < prefSize)
+		local = cl::NDRange(nElem / 4);
+	else
+		local = cl::NDRange(prefSize);
+
+	cl::NDRange global(nElem / 4);
+	tiny.RunKernel(kernel, local, global);
+
+	//Read results
+	float result[nElem / 4] = {0};
+	tiny.ReadData(bOut, (nElem / 4) * sizeof(float), result);
+	tiny.mQueue.finish();
+
+	//Sum to get final result
+	float sum = 0.0f;
+	for (int i = 0; i < nElem / 4; ++i)
+		sum += result[i];
+	std::cout << "\nDot result: " << sum << std::endl;
 }
