@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#define SIZE 8
+#define SIZE 4
 #define BLOCK_SIZE 2
 
 //Helper to print a SIZExSIZE matrix
@@ -81,37 +81,44 @@ void transposeBlock(float *mat, int i, int j){
 	}
 }
 void transposeBlockN(float *mat, int n){
-	printf("\nFinding i,j for block # %d\n", n);
-
-	//This is the method done in the book's kernel
-	//int size = SIZE;
-	//int col = n;
-	//int row = 0;
-	// while(col >= size) {
-	// 	col -= size--;
-	// 	row++;
-	// }
-	// col += row;
-	// size += row;
+	printf("\nFinding i,j for transposeblock # %d\n", n);
 
 	int blockPerRow = SIZE / BLOCK_SIZE;
 	int row = 0, col = 0;
-	if (n >= blockPerRow){
-		while (n >= blockPerRow){
-			printf("n (%d) >= blockPerRow (%d)\n", n, blockPerRow);
-			n -= BLOCK_SIZE;
-			row += BLOCK_SIZE;
-		}
-		printf("\tn: %d, row: %d\n", n, row);
-		col = n * row + (n / blockPerRow) * blockPerRow;
+	//The index of the block we want to read should be offset
+	//by the # of blocks to the diagonal, ie if we're reading
+	//transpose block 2 in a 4x4 matrix [0-2] we should read 
+	//matrix block # 3
+	int seenBlocks = blockPerRow;
+	//Transpose blocks per row
+	int tBlockPerRow = blockPerRow;
+	while (n >= seenBlocks){
+		seenBlocks += blockPerRow;
+		--tBlockPerRow;
+		row += BLOCK_SIZE;
+		n += blockPerRow - tBlockPerRow;
 	}
-	else
-		col = n * BLOCK_SIZE;
+	printf("\tmatrix block n: %d\n", n);
+	if (n / blockPerRow == 0){
+		n *= BLOCK_SIZE;
+		printf("\tentry index: %d\n", n);
+	}
+	//n * BLOCK_SIZE is the initial col offset
+	//n / blockPerRow * BLOCK_SIZE^2 is the block row/col offset?
+	//(blockPerRow - tBlockPerRow) * BLOCK_SIZE is the current row offset
+	else {
+		//This only works for 6x6 with 2x2 block
+		n = n * BLOCK_SIZE
+			+ (n / blockPerRow) * (BLOCK_SIZE * BLOCK_SIZE) 
+			+ (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
+		printf("\tn / blockPerRow > 0\n");
+		printf("\tentry index: %d\n", n);
+	}
 
 	printf("\ti, j: %d, %d\n", row, col);
-	printf("\tsource location at n = %d\n", row * SIZE + col);
+	printf("\tsource location at n = %d\n", n);
 	//Move float ptr to source block
-   	float *src = mat + row * SIZE + col;
+   	float *src = mat + n;
 	printf("\tvalues:\n");
 	for (int i = 0; i < BLOCK_SIZE; ++i){
 		for (int j = 0; j < BLOCK_SIZE; ++j)
