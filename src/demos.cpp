@@ -18,6 +18,7 @@
 #include <glvertexarray.h>
 #include <timer.h>
 #include "tinycl.h"
+#include "demos.h"
 
 void liveAdvectTexture(){
 	Window window("Realtime Texture Advection");
@@ -183,7 +184,7 @@ void bigDot(){
 	cl::Kernel kernel = tiny.LoadKernel(prog, "bigDot");
 
 	//Setup the input data
-	const int nElem = 32;
+	const int nElem = 4;
 	float vecA[nElem] = {0};
 	float vecB[nElem] = {0};
 	for (int i = 0; i < nElem; ++i){
@@ -209,16 +210,9 @@ void bigDot(){
 	kernel.setArg(2, bOut);
 	kernel.setArg(3, sizeof(int), (void*)&nElem);
 
-	//Need to process a total of nElem / 4 items
-	int prefSize = tiny.PreferredWorkSize(kernel);
-	cl::NDRange local;
-	if (nElem / 4 < prefSize)
-		local = cl::NDRange(nElem / 4);
-	else
-		local = cl::NDRange(prefSize);
-
+	//We pass nullrange to the local argument to let OpenCL decide how to split things up
 	cl::NDRange global(nElem / 4);
-	tiny.RunKernel(kernel, local, global);
+	tiny.RunKernel(kernel, cl::NullRange, global);
 
 	//Read results
 	float result[nElem / 4] = {0};
@@ -230,4 +224,56 @@ void bigDot(){
 	for (int i = 0; i < nElem / 4; ++i)
 		sum += result[i];
 	std::cout << "\nDot result: " << sum << std::endl;
+}
+void transpose(){
+	CL::TinyCL tiny(CL::DEVICE::GPU);
+	cl::Program prog = tiny.LoadProgram("../res/transpose.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
+	
+	//Setup the matrix
+	const cl_uint matDim = 8;
+	float **matrix = new float*[matDim];
+	for (cl_uint i = 0; i < matDim; ++i){
+		matrix[i] = new float[matDim];
+		for (cl_uint j = 0; j < matDim; ++j)
+			matrix[i][j] = 1.0f * i * matDim + j;
+	}
+	std::cout << "Initial matrix: ";
+	logMatrix(matrix, matDim, matDim);
+
+	//Setup matrix buffer
+	cl::Buffer bufMat = tiny.Buffer(CL::MEM::READ_WRITE, sizeof(float) * matDim * matDim, matrix);
+	//Setup local mem params and the size param
+	size_t localMem = tiny.mDevices.at(0).getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
+	cl_uint sizeParam = matDim / 4;
+
+	//Pass kernel arguments
+	kernel.setArg(0, bufMat);
+	kernel.setArg(1, localMem, NULL);
+	kernel.setArg(2, sizeof(sizeParam), &sizeParam);
+
+	//Figure out local and global size
+	size_t globalSize = (matDim / 4 * (matDim / 4 + 1)) / 2;
+	cl::NDRange global(globalSize);
+
+	tiny.RunKernel(kernel, cl::NullRange, global);
+
+	//Read the transposed matrix result
+	tiny.ReadData(bufMat, sizeof(float) * matDim * matDim, matrix);
+	std::cout << "Transposed: ";
+	logMatrix(matrix, matDim, matDim);
+}
+void miniTranspose(){
+	CL::TinyCL tiny(CL::DEVICE::GPU);
+	cl::Program prog = tiny.LoadProgram("../res/minitranspose.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
+}
+void logMatrix(float **mat, size_t m, size_t n){
+	std::cout << std::setprecision(4) << '\n';
+	for (size_t i = 0; i < m; ++i){
+		for (size_t j = 0; j < n; ++j)
+			std::cout << std::setw(6) << mat[i][j] << " ";
+		std::cout << '\n';
+	}
+	std::cout << std::endl;
 }

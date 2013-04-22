@@ -4,7 +4,7 @@
 __kernel void transpose(__global float4 *gMat, __local float4 *lMat, uint size){
 	//Source and destination pointers, locate where we
 	//want to read and write our data from
-	__global float4 *src, dst;
+	__global float4 *src, *dst;
 	//Compute row/column location
 	int col = get_global_id(0);
 	int row = 0;

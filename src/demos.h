@@ -12,3 +12,13 @@ void liveAdvectTexture();
 * This is not an interop program, just a standard math operation
 */
 void bigDot();
+/*
+* This performs a matrix transpose operation on matrices of 4n x 4n size
+*/
+void transpose();
+/*
+* This performs a matrix transpose operation on matrices of 2n x 2n size
+*/
+void miniTranspose();
+//Helper function, print an MxN matrix
+void logMatrix(float **mat, size_t m, size_t n);

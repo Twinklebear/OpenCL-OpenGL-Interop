@@ -144,6 +144,7 @@ void CL::TinyCL::SelectDevice(DEVICE dev){
 			<< "\nDriver Version: " << mDevices.at(0).getInfo<CL_DRIVER_VERSION>() 
 			<< "\nDevice Profile: " << mDevices.at(0).getInfo<CL_DEVICE_PROFILE>() 
 			<< "\nDevice Version: " << mDevices.at(0).getInfo<CL_DEVICE_VERSION>()
+			<< "\nPreferred local mem size: " << mDevices.at(0).getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() / 1024.0f << " kB"
 			<< std::endl;
 		mContext = cl::Context(mDevices);
 		mQueue = cl::CommandQueue(mContext, mDevices.at(0));
