@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#define SIZE 4
+#define SIZE 6
 #define BLOCK_SIZE 2
 
 //Helper to print a SIZExSIZE matrix
@@ -68,13 +68,14 @@ void transposeBlock(float *mat, int i, int j){
 		swap(&mat[i + 1 + j * SIZE], &mat[i + (j + 1) * SIZE]);
 	//Off-diagonal blocks swap with the corresponding block on the lower-triangle
 	else {
-		//Setup the destination pointer
-		float *dst = mat + i + j * SIZE;
-		printf("swapping with block containing:\n");
+		printf("Swapping blocks:\n");
 
 		//Need to store 2 blocks of floats
+		//Note that the way the tmp/src/dst reading/writing is hardcoded now
+		//this code won't work with BLOCK_SIZE != 2
 		float *tmp = malloc(sizeof(float) * 2 * BLOCK_SIZE * BLOCK_SIZE);
-		//Store the src block
+		//Setup dst and src pointers
+		float *dst = mat + i + j * SIZE;
 		float *src = mat + i * SIZE + j;
 		tmp[0] = src[0];
 		tmp[1] = src[1];
