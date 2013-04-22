@@ -1,6 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
-#define SIZE 4
+#define SIZE 8
 #define BLOCK_SIZE 2
 
 //Helper to print a SIZExSIZE matrix
@@ -26,19 +26,14 @@ int main(int argc, char **argv){
 
 	//Transpose the matrix
 	//As it is now this will actually transpose the matrix then transpose it back
-	for (int n = 0; n < SIZE * SIZE; ++n)
-		transpose(matrix, n);
-	// transposeBlock(matrix, 0, 0);
-	// transposeBlock(matrix, 0, 2);
-	// transposeBlock(matrix, 2, 2);
+	// for (int n = 0; n < SIZE * SIZE; ++n)
+	// 	transpose(matrix, n);
 
-	printf("Transposed matrix:\n");
-	printMatrix(matrix);
+	// printf("Transposed matrix:\n");
+	// printMatrix(matrix);
 
-	// for (int i = 0; i < (SIZE / BLOCK_SIZE * (SIZE / BLOCK_SIZE + 1)) / 2; ++i)
-	transposeBlockN(matrix, 0);
-	transposeBlockN(matrix, 1);
-	transposeBlockN(matrix, 2);
+	for (int i = 0; i < (SIZE / BLOCK_SIZE * (SIZE / BLOCK_SIZE + 1)) / 2; ++i)
+		transposeBlockN(matrix, i);
 
 	return 0;
 }
@@ -88,24 +83,41 @@ void transposeBlock(float *mat, int i, int j){
 void transposeBlockN(float *mat, int n){
 	printf("\nFinding i,j for block # %d\n", n);
 
-	int size = SIZE;
-	int col = n;
-	int row = 0;
-	while(col >= size) {
-		col -= size--;
-		row++;
-	}
-	col += row;
-	size += row;
+	//This is the method done in the book's kernel
+	//int size = SIZE;
+	//int col = n;
+	//int row = 0;
+	// while(col >= size) {
+	// 	col -= size--;
+	// 	row++;
+	// }
+	// col += row;
+	// size += row;
 
-	printf("block %d:\n\ti, j: %d, %d\n", n, row, col);
-	printf("\tsource location at n = %d\n", row * size * BLOCK_SIZE + col);
+	int blockPerRow = SIZE / BLOCK_SIZE;
+	int row = 0, col = 0;
+	if (n >= blockPerRow){
+		while (n >= blockPerRow){
+			printf("n (%d) >= blockPerRow (%d)\n", n, blockPerRow);
+			n -= BLOCK_SIZE;
+			row += BLOCK_SIZE;
+		}
+		printf("\tn: %d, row: %d\n", n, row);
+		col = n * row + (n / blockPerRow) * blockPerRow;
+	}
+	else
+		col = n * BLOCK_SIZE;
+
+	printf("\ti, j: %d, %d\n", row, col);
+	printf("\tsource location at n = %d\n", row * SIZE + col);
 	//Move float ptr to source block
-   	float *src = mat + row * size * BLOCK_SIZE + col;
+   	float *src = mat + row * SIZE + col;
 	printf("\tvalues:\n");
-	for (int i = 0; i < BLOCK_SIZE; ++i)
-		printf("\t%*.2f %*.2f\n", 5, src[i * size + 0], 5, src[i * size + 1]);
-	printf("\n");
+	for (int i = 0; i < BLOCK_SIZE; ++i){
+		for (int j = 0; j < BLOCK_SIZE; ++j)
+			printf("\t%*.2f", 5, src[i * SIZE + j]);
+		printf("\n");
+	}
 	/*
 	* on 4x4 they should be
 	* 0: 0, 0
