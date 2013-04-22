@@ -97,34 +97,40 @@ void transposeBlockN(float *mat, int n){
 		--tBlockPerRow;
 		row += BLOCK_SIZE;
 		n += blockPerRow - tBlockPerRow;
+		// printf("\trow: %d, tBlockPerRow: %d, n: %d\n", row, tBlockPerRow, n);
 	}
-	printf("\tmatrix block n: %d\n", n);
-	if (n / blockPerRow == 0){
-		n *= BLOCK_SIZE;
-		printf("\tentry index: %d\n", n);
-	}
-	//n * BLOCK_SIZE is the initial col offset
-	//n / blockPerRow * BLOCK_SIZE^2 is the block row/col offset?
-	//(blockPerRow - tBlockPerRow) * BLOCK_SIZE is the current row offset
-	else {
-		//This only works for 6x6 with 2x2 block
-		n = n * BLOCK_SIZE
-			+ (n / blockPerRow) * (BLOCK_SIZE * BLOCK_SIZE) 
-			+ (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
-		printf("\tn / blockPerRow > 0\n");
-		printf("\tentry index: %d\n", n);
-	}
+	//Trying an idea
+	//n % tBlockPerRow * BLOCK_SIZE gives us the column relative to the diagonal
+	//block, which we then offset by the offset # of blocks
+	// (blockPerRow - tBlockPerRow) * BLOCK_SIZE
+	col = n % tBlockPerRow * BLOCK_SIZE + (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
 
-	printf("\ti, j: %d, %d\n", row, col);
-	printf("\tsource location at n = %d\n", n);
+	printf("\tmatrix block n: %d, row: %d, col: %d\n", n, row, col);
+	// if (n / blockPerRow == 0){
+	// 	n *= BLOCK_SIZE;
+	// 	printf("\tentry index: %d\n", n);
+	// }
+	// //n * BLOCK_SIZE is the initial col offset
+	// //n / blockPerRow * BLOCK_SIZE^2 is the block row/col offset?
+	// //(blockPerRow - tBlockPerRow) * BLOCK_SIZE is the current row offset
+	// else {
+	// 	//This only works for 6x6 with 2x2 block
+	// 	n = n * BLOCK_SIZE
+	// 		+ (n / blockPerRow) * (BLOCK_SIZE * BLOCK_SIZE) 
+	// 		+ (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
+	// 	printf("\tn / blockPerRow > 0\n");
+	// 	printf("\tentry index: %d\n", n);
+	// }
+
+	// printf("\tsource location at n = %d\n", n);
 	//Move float ptr to source block
-   	float *src = mat + n;
-	printf("\tvalues:\n");
-	for (int i = 0; i < BLOCK_SIZE; ++i){
-		for (int j = 0; j < BLOCK_SIZE; ++j)
-			printf("\t%*.2f", 5, src[i * SIZE + j]);
-		printf("\n");
-	}
+	//float *src = mat + n;
+	// printf("\tvalues:\n");
+	// for (int i = 0; i < BLOCK_SIZE; ++i){
+	// 	for (int j = 0; j < BLOCK_SIZE; ++j)
+	// 		printf("\t%*.2f", 5, src[i * SIZE + j]);
+	// 	printf("\n");
+	// }
 	/*
 	* on 4x4 they should be
 	* 0: 0, 0
