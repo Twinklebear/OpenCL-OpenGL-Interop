@@ -24,17 +24,13 @@ int main(int argc, char **argv){
 	printf("Initial matrix:\n");
 	printMatrix(matrix);
 
-	//Transpose the matrix
-	//As it is now this will actually transpose the matrix then transpose it back
-	// for (int n = 0; n < SIZE * SIZE; ++n)
-	// 	transpose(matrix, n);
-
-	// printf("Transposed matrix:\n");
-	// printMatrix(matrix);
-
 	for (int i = 0; i < (SIZE / BLOCK_SIZE * (SIZE / BLOCK_SIZE + 1)) / 2; ++i)
 		transposeBlockN(matrix, i);
 
+	printf("Transposed matrix:\n");
+	printMatrix(matrix);
+
+	free(matrix);
 	return 0;
 }
 void printMatrix(float *mat){
@@ -68,13 +64,43 @@ void transposeBlock(float *mat, int i, int j){
 	if (i > SIZE || j > SIZE)
 		printf("Invalid i or j: %d, %d\n", i, j);
 	//Blocks on diagonals we swap the off-diagonal elements
-	else if (i == j);
-		// swap(&mat[i][j + 1], &mat[i + 1][j]);
+	else if (i == j)
+		swap(&mat[i + 1 + j * SIZE], &mat[i + (j + 1) * SIZE]);
 	//Off-diagonal blocks swap with the corresponding block on the lower-triangle
 	else {
-		for (int m = 0; m < 2; ++m)
-			for (int n = 0; n < 2; ++n);
-				// swap(&mat[i + n][j + m], &mat[j + m][i + n]);
+		//Setup the destination pointer
+		float *dst = mat + i + j * SIZE;
+		printf("swapping with block containing:\n");
+
+		//Need to store 2 blocks of floats
+		float *tmp = malloc(sizeof(float) * 2 * BLOCK_SIZE * BLOCK_SIZE);
+		//Store the src block
+		float *src = mat + i * SIZE + j;
+		tmp[0] = src[0];
+		tmp[1] = src[1];
+		tmp[2] = src[SIZE];
+		tmp[3] = src[SIZE + 1];
+		printf("src block vals: %.2f, %.2f, %.2f, %.2f\n", src[0],
+			src[1], src[SIZE], src[SIZE + 1]);
+		//Store dst block
+		tmp[4] = dst[0];
+		tmp[5] = dst[1];
+		tmp[6] = dst[SIZE];
+		tmp[7] = dst[SIZE + 1];
+		printf("dst block vals: %.2f, %.2f, %.2f, %.2f\n", dst[0],
+			dst[1], dst[SIZE], dst[SIZE + 1]);
+
+		//Perform the swap
+		src[0] = tmp[4];
+		src[SIZE] = tmp[5];
+		src[1] = tmp[6];
+		src[SIZE + 1] = tmp[7];
+		dst[0] = tmp[0];
+		dst[SIZE] = tmp[1];
+		dst[1] = tmp[2];
+		dst[SIZE + 1] = tmp[3];
+
+		free(tmp);
 	}
 }
 void transposeBlockN(float *mat, int n){
@@ -113,4 +139,6 @@ void transposeBlockN(float *mat, int n){
 			printf("\t%*.2f", 5, src[i * SIZE + j]);
 		printf("\n");
 	}
+
+	transposeBlock(mat, row, col);
 }
