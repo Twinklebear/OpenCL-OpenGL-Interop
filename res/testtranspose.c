@@ -1,10 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
-#define SIZE 6
+#define SIZE 4
 #define BLOCK_SIZE 2
 
 //Helper to print a SIZExSIZE matrix
 void printMatrix(float *mat);
+//Helper to log a SIZExSIZE matrix to some file
+void logMatrix(float *mat, const char *fname);
 //Helper to swap two floats
 void swap(float *a, float *b);
 //Transpose an entry in the matrix, n is the nth entry
@@ -23,12 +25,14 @@ int main(int argc, char **argv){
 	}
 	printf("Initial matrix:\n");
 	printMatrix(matrix);
+	logMatrix(matrix, "init.txt");
 
 	for (int i = 0; i < (SIZE / BLOCK_SIZE * (SIZE / BLOCK_SIZE + 1)) / 2; ++i)
 		transposeBlockN(matrix, i);
 
 	printf("Transposed matrix:\n");
 	printMatrix(matrix);
+	logMatrix(matrix, "out.txt");
 
 	free(matrix);
 	return 0;
@@ -37,9 +41,23 @@ void printMatrix(float *mat){
 	for (int i = 0; i < SIZE * SIZE; ++i){
 		if (i % SIZE == 0 && i != 0)
 			printf("\n");
-		printf(" %*.2f ", 5, mat[i]);
+		printf(" %*.3f ", 6, mat[i]);
 	}
 	printf("\n");
+}
+void logMatrix(float *mat, const char *fname){
+	FILE *fp = fopen(fname, "w");
+	if (fp == NULL)
+		printf("Failed to open %s!\n", fname);
+	else {
+		for (int i = 0; i < SIZE * SIZE; ++i){
+			if (i % SIZE == 0 && i != 0)
+				fprintf(fp, "\n");
+			fprintf(fp, "%*.1f", 7, mat[i]);
+		}
+		fprintf(fp, "\n");
+		fclose(fp);
+	}
 }
 void swap(float *a, float *b){
 	float tmp = *a;
@@ -64,49 +82,35 @@ void transposeBlock(float *mat, int i, int j){
 	if (i > SIZE || j > SIZE)
 		printf("Invalid i or j: %d, %d\n", i, j);
 	//Blocks on diagonals we swap the off-diagonal elements
-	else if (i == j)
-		swap(&mat[i + 1 + j * SIZE], &mat[i + (j + 1) * SIZE]);
+	else if (i == j){
+		for (int l = 0; l < BLOCK_SIZE; ++l)
+			for (int k = l + 1; k < BLOCK_SIZE; ++k)
+				swap(&mat[i + k + (j + l) * SIZE], &mat[i + l + (j + k) * SIZE]);
+	}
 	//Off-diagonal blocks swap with the corresponding block on the lower-triangle
 	else {
-		printf("Swapping blocks:\n");
-
 		//Need to store 2 blocks of floats
-		//Note that the way the tmp/src/dst reading/writing is hardcoded now
-		//this code won't work with BLOCK_SIZE != 2
 		float *tmp = malloc(sizeof(float) * 2 * BLOCK_SIZE * BLOCK_SIZE);
 		//Setup dst and src pointers
 		float *dst = mat + i + j * SIZE;
 		float *src = mat + i * SIZE + j;
-		tmp[0] = src[0];
-		tmp[1] = src[1];
-		tmp[2] = src[SIZE];
-		tmp[3] = src[SIZE + 1];
-		printf("src block vals: %.2f, %.2f, %.2f, %.2f\n", src[0],
-			src[1], src[SIZE], src[SIZE + 1]);
-		//Store dst block
-		tmp[4] = dst[0];
-		tmp[5] = dst[1];
-		tmp[6] = dst[SIZE];
-		tmp[7] = dst[SIZE + 1];
-		printf("dst block vals: %.2f, %.2f, %.2f, %.2f\n", dst[0],
-			dst[1], dst[SIZE], dst[SIZE + 1]);
+		//Read src block
+		for (int k = 0; k < BLOCK_SIZE * BLOCK_SIZE; ++k)
+			tmp[k] = src[k / BLOCK_SIZE * SIZE + k % BLOCK_SIZE];
+		//Read dst block
+		for (int k = 0; k < BLOCK_SIZE * BLOCK_SIZE; ++k)
+			tmp[k + BLOCK_SIZE * BLOCK_SIZE] = dst[k / BLOCK_SIZE * SIZE + k % BLOCK_SIZE];
 
 		//Perform the swap
-		src[0] = tmp[4];
-		src[SIZE] = tmp[5];
-		src[1] = tmp[6];
-		src[SIZE + 1] = tmp[7];
-		dst[0] = tmp[0];
-		dst[SIZE] = tmp[1];
-		dst[1] = tmp[2];
-		dst[SIZE + 1] = tmp[3];
+		for (int k = 0; k < BLOCK_SIZE * BLOCK_SIZE; ++k){
+			src[k / BLOCK_SIZE + k % BLOCK_SIZE * SIZE] = tmp[k + BLOCK_SIZE * BLOCK_SIZE];
+			dst[k / BLOCK_SIZE + k % BLOCK_SIZE * SIZE] = tmp[k];
+		}
 
 		free(tmp);
 	}
 }
 void transposeBlockN(float *mat, int n){
-	printf("\nFinding i,j for transposeblock # %d\n", n);
-
 	int blockPerRow = SIZE / BLOCK_SIZE;
 	int row = 0, col = 0;
 	//The index of the block we want to read should be offset
@@ -128,18 +132,5 @@ void transposeBlockN(float *mat, int n){
 	//block, which we then offset by the offset # of blocks
 	// (blockPerRow - tBlockPerRow) * BLOCK_SIZE
 	col = n % tBlockPerRow * BLOCK_SIZE + (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
-
-	printf("\tmatrix block #: %d, row: %d, col: %d\n", n, row, col);
-	int idx = row * SIZE + col;
-	printf("\t0, 0 of source location idx: %d\n", idx);
-	//Move float ptr to source block
-	float *src = mat + idx;
-	printf("\tvalues:\n");
-	for (int i = 0; i < BLOCK_SIZE; ++i){
-		for (int j = 0; j < BLOCK_SIZE; ++j)
-			printf("\t%*.2f", 5, src[i * SIZE + j]);
-		printf("\n");
-	}
-
 	transposeBlock(mat, row, col);
 }
