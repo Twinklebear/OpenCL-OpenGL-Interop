@@ -229,9 +229,9 @@ void transpose(){
 	CL::TinyCL tiny(CL::DEVICE::GPU);
 	cl::Program prog = tiny.LoadProgram("../res/transpose.cl");
 	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
-	
+
 	//Setup the matrix
-	const cl_uint matDim = 8;
+	const cl_uint matDim = 4;
 	float **matrix = new float*[matDim];
 	for (cl_uint i = 0; i < matDim; ++i){
 		matrix[i] = new float[matDim];
@@ -249,7 +249,7 @@ void transpose(){
 
 	//Pass kernel arguments
 	kernel.setArg(0, bufMat);
-	kernel.setArg(1, localMem, NULL);
+	kernel.setArg(1, localMem , NULL);
 	kernel.setArg(2, sizeof(sizeParam), &sizeParam);
 
 	//Figure out local and global size
@@ -262,11 +262,6 @@ void transpose(){
 	tiny.ReadData(bufMat, sizeof(float) * matDim * matDim, matrix);
 	std::cout << "Transposed: ";
 	logMatrix(matrix, matDim, matDim);
-}
-void miniTranspose(){
-	CL::TinyCL tiny(CL::DEVICE::GPU);
-	cl::Program prog = tiny.LoadProgram("../res/minitranspose.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
 }
 void logMatrix(float **mat, size_t m, size_t n){
 	std::cout << std::setprecision(4) << '\n';

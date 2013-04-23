@@ -112,7 +112,7 @@ void transposeBlock(float *mat, int i, int j){
 }
 void transposeBlockN(float *mat, int n){
 	int blockPerRow = SIZE / BLOCK_SIZE;
-	int row = 0, col = 0;
+	int row = 0, col = n;
 	//The index of the block we want to read should be offset
 	//by the # of blocks to the diagonal, ie if we're reading
 	//transpose block 2 in a 4x4 matrix [0-2] we should read 
@@ -121,16 +121,17 @@ void transposeBlockN(float *mat, int n){
 	//and also find the row
 	int seenBlocks = blockPerRow;
 	int tBlockPerRow = blockPerRow;
-	while (n >= seenBlocks){
+	while (col >= seenBlocks){
 		seenBlocks += blockPerRow;
 		--tBlockPerRow;
 		row += BLOCK_SIZE;
-		n += blockPerRow - tBlockPerRow;
+		col += blockPerRow - tBlockPerRow;
 	}
 	//Find the column
 	//n % tBlockPerRow * BLOCK_SIZE gives us the column relative to the diagonal
 	//block, which we then offset by the offset # of blocks
 	// (blockPerRow - tBlockPerRow) * BLOCK_SIZE
-	col = n % tBlockPerRow * BLOCK_SIZE + (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
+	//col comes out equal to the matrix block number
+	col = col % tBlockPerRow * BLOCK_SIZE + (blockPerRow - tBlockPerRow) * BLOCK_SIZE;
 	transposeBlock(mat, row, col);
 }
