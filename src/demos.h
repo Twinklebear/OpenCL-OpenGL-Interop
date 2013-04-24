@@ -17,4 +17,4 @@ void bigDot();
 */
 void transpose();
 //Helper function, print an MxN matrix
-void logMatrix(float **mat, size_t m, size_t n);
+void logMatrix(float *mat, size_t m, size_t n);

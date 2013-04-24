@@ -231,26 +231,23 @@ void transpose(){
 	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
 
 	//Setup the matrix
-	const cl_uint matDim = 4;
-	float **matrix = new float*[matDim];
-	for (cl_uint i = 0; i < matDim; ++i){
-		matrix[i] = new float[matDim];
-		for (cl_uint j = 0; j < matDim; ++j)
-			matrix[i][j] = 1.0f * i * matDim + j;
+	cl_uint matDim = 16;
+	float *matrix = new float[matDim * matDim];
+	for (int i = 0; i < matDim * matDim; ++i){
+		matrix[i] = i;
 	}
 	std::cout << "Initial matrix: ";
 	logMatrix(matrix, matDim, matDim);
-
 	//Setup matrix buffer
 	cl::Buffer bufMat = tiny.Buffer(CL::MEM::READ_WRITE, sizeof(float) * matDim * matDim, matrix);
 	//Setup local mem params and the size param
 	size_t localMem = tiny.mDevices.at(0).getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
-	cl_uint sizeParam = matDim / 4;
+	cl_uint nBlocks = matDim / 4;
 
 	//Pass kernel arguments
 	kernel.setArg(0, bufMat);
 	kernel.setArg(1, localMem , NULL);
-	kernel.setArg(2, sizeof(sizeParam), &sizeParam);
+	kernel.setArg(2, sizeof(nBlocks), &nBlocks);
 
 	//Figure out local and global size
 	size_t globalSize = (matDim / 4 * (matDim / 4 + 1)) / 2;
@@ -263,12 +260,12 @@ void transpose(){
 	std::cout << "Transposed: ";
 	logMatrix(matrix, matDim, matDim);
 }
-void logMatrix(float **mat, size_t m, size_t n){
+void logMatrix(float *mat, size_t m, size_t n){
 	std::cout << std::setprecision(4) << '\n';
-	for (size_t i = 0; i < m; ++i){
-		for (size_t j = 0; j < n; ++j)
-			std::cout << std::setw(6) << mat[i][j] << " ";
-		std::cout << '\n';
+	for (size_t i = 0; i < m * n; ++i){
+		if (i % m == 0 && i != 0)
+			std::cout << '\n';
+		std::cout << std::setw(6) << mat[i] << " ";
 	}
 	std::cout << std::endl;
 }
