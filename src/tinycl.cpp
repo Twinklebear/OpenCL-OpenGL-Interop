@@ -9,6 +9,16 @@
 #include <util.h>
 #include "tinycl.h"
 
+#ifdef __linux__
+#include <X11/X.h>
+#include <X11/Xlib.h>
+#include <GL/gl.h>
+#include <GL/glx.h>
+#include <GL/glu.h>
+#elseif defined(__APPLE__)
+#include <OpenGL/OpenGL.h>
+#endif
+
 CL::TinyCL::TinyCL(DEVICE dev, bool interop){
 	if (interop)
 		SelectInteropDevice(dev);
@@ -169,15 +179,22 @@ void CL::TinyCL::SelectInteropDevice(DEVICE dev){
 			CL_CONTEXT_PLATFORM, (cl_context_properties)(mPlatforms[0])(),
 			0
 		};
-#endif
-#ifdef __linux__
+#elif defined(__linux__)
 		cl_context_properties properties[] = {
 			CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
 			CL_WGL_HDC_KHR, (cl_context_properties)glXGetCurrentDisplay(),
 			CL_CONTEXT_PLATFORM, (cl_context_properties)(mPlatforms[0])(),
 			0
 		};
+#elif defined(__APPLE__)
+		CGLContextObj glContext = CGLGetCurrentContext();
+		CGLShareGroupObj shareGroup = CGLGetShareGroup(glContext);
+		cl_context_properties properties[] = {
+			CL_CONTEXT_PROPERTY_USE_CGL_SHAREGROUP_APPLE,
+			(cl_context_properties)shareGroup,
+		};
 #endif
+
 		mContext = cl::Context(mDevices, properties);
 		//Grab the OpenGL device
 		mDevices = mContext.getInfo<CL_CONTEXT_DEVICES>();
