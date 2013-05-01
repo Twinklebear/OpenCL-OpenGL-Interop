@@ -8,6 +8,7 @@
 #include <CL/cl.hpp>
 #include <glvertexbuffer.h>
 #include <glvertexarray.h>
+#include <gltexture.h>
 
 namespace Util {
 	std::string ReadFile(const std::string &file);

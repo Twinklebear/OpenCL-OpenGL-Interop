@@ -267,5 +267,5 @@ void logMatrix(float *mat, size_t m, size_t n){
 			std::cout << '\n';
 		std::cout << std::setw(6) << mat[i] << " ";
 	}
-	std::cout << std::endl;
+	std::cout << "\n";
 }
