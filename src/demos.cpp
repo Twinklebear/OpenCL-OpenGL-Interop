@@ -67,7 +67,7 @@ void liveAdvectTexture(){
 	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
 	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
 #endif
-	const float speed = 50.0f;
+	const float speed = 0.4f;
 	float velocity[2] = { 0.0f, 0.0f };
 	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 	//Setup our GL objects vector
