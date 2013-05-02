@@ -67,6 +67,7 @@ void liveAdvectTexture(){
 	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
 	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
 #endif
+	const float speed = 50.0f;
 	float velocity[2] = { 0.0f, 0.0f };
 	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 	//Setup our GL objects vector
@@ -104,19 +105,19 @@ void liveAdvectTexture(){
 				switch (e.key.keysym.sym){
 					//So we can change velocity
 					case SDLK_w:
-						velocity[1] = 100.0f;
+						velocity[1] = speed;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_s:
-						velocity[1] = -100.0f;
+						velocity[1] = -speed;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_a:
-						velocity[0] = -100.0f;
+						velocity[0] = -speed;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_d:
-						velocity[0] = 100.0f;
+						velocity[0] = speed;
 						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_r:

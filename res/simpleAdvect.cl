@@ -25,10 +25,10 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	//What about this method?
 	//float2 k_1 = dt * (*vel);
 	//float2 k_2 = dt * (*vel + k_1 / 2.0f);
+	//float2 x_nS = x_n - k_2;
 	//Is this RK2 or the version in advect correct? will have to check with book
 	float2 x_nHalf = x_n - 0.5f * dt * v;//(*vel);
 	float2 x_nS = x_nHalf - dt * v;//(*vel);
-	//float2 x_nS = x_n - k_2;
 	//Wrap x_nS appropriately. Is there no built in function for this?
 	//Or a faster way to do this?
 	//get the width and height so we can wrap the coord around if needed
@@ -46,10 +46,6 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 		x_nS.y += size.y;
 
 	//Now sample the value where we "started" and set the next value at x_n to that one
-	//We use the linear sampler to get linear interpolation at the traceposition for free
-	//This is ok on Nvidia
 	float4 tVal = read_imagef(inImg, nearest, x_nS);
-	//But why can't I do this on Nvidia? (is it b/c Nvidia has CL1.1?)
-	//float4 tVal = (float4)(1.0f, 0.0f, 0.0f, 1.0f);
 	write_imagef(outImg, coord, tVal);
 }
