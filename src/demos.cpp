@@ -67,9 +67,12 @@ void liveAdvectTexture(){
 	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
 	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
 #endif
-	const float speed = 0.4f;
+	const float speed = 0.2f;
 	float velocity[2] = { 0.0f, 0.0f };
 	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
+	//Debug buffer, write velocities out
+	float *dbgData = new float[256 * 256 * 2];
+	cl::Buffer dbgBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, 256 * 256 * 2 * sizeof(float));
 	//Setup our GL objects vector
 	std::vector<cl::Memory> glObjs;
 	glObjs.push_back(imgA);
@@ -78,6 +81,7 @@ void liveAdvectTexture(){
 	float dt = 1.0f / FPS;
 	kernel.setArg(0, sizeof(float), &dt);
 	kernel.setArg(1, velBuf);
+	kernel.setArg(4, dbgBuf);
 	//Query the preferred work group size
 	int workSize = tiny.PreferredWorkSize(kernel);
 	//fixed for now
@@ -92,7 +96,7 @@ void liveAdvectTexture(){
 	//Limit framerate with a timer
 	Timer delta;
 	//For tracking if we want to quit
-	bool quit = false, paused = false;
+	bool quit = false, paused = false, printDbg = true;
 	while (!quit){
 		delta.Start();
 		//Event Polling
@@ -138,9 +142,38 @@ void liveAdvectTexture(){
 				}
 			}
 		}
+		//When we pause read out and print the velocity information
+		if (paused && printDbg){
+			printDbg = false;
+			tiny.ReadData(dbgBuf, 256 * 256 * 2, dbgData);
+			//Print only the bottom and top rows, note that 0, 0 denotes the
+			//bottom left corner on the image
+			std::cout << "Bottom row:\n";
+			for (int i = 0; i < 1 * 2; ++i){
+				if (i % 2 == 0){
+					std::cout << "\n" << "idx: " << i 
+						<< " x,y: " << (i / 2) % 256 << ", "
+						<< (i / 2 - (i / 2) % 256) / 256 << " val: ";
+				}
+				std::cout << dbgData[i] << ", ";
+			}
+			//std::cout << "\n\nLowrow:\n";
+			//Why do I get nothing at row 64 and up?
+			//int row = 64;
+			//for (int i = row * 256 * 2; i < row * 256 * 2 + 256 * 2; ++i){
+			//	if (i % 2 == 0){
+			//		std::cout << "\n" << "idx: " << i 
+			//			<< " x,y: " << (i / 2) % 256 << ", "
+			//			<< (i / 2 - (i / 2) % 256) / 256 << " val: ";
+			//	}
+			//	std::cout << dbgData[i] << ", ";
+			//}
+			std::cout << std::endl;
+		}
 		//Run the kernel, setting the in/out textures properly. On even runs the output will be
 		//in texB, on odd runs output will be in texA
 		if (!paused){
+			printDbg = true;
 			try {
 				//On even runs and the first run texB/imgB is our output, on odd runs it's flipped
 				//Is this really the best way to do this? Maybe there is some faster way to copy the image over
@@ -177,6 +210,7 @@ void liveAdvectTexture(){
 		if (delta.Ticks() < 1000 / FPS)
 			SDL_Delay(1000 / FPS - delta.Ticks());
 	}
+	delete dbgData;
 	Window::Quit();
 }
 void bigDot(){
