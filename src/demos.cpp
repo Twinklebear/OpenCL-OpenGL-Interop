@@ -278,3 +278,23 @@ std::array<float, 16> householder(std::array<float, 4> vect, CL::TinyCL &tiny){
 	tiny.ReadData(res, sizeof(float) * 16, &mat[0]);
 	return mat;
 }
+cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny){
+	cl::Program prog = tiny.LoadProgram("../res/matvecmult.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "matVecMult");
+
+	cl::Buffer hMat = householderBuf(u, tiny);
+	cl::Buffer res = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * 4);
+
+	kernel.setArg(0, hMat);
+	kernel.setArg(1, sizeof(float) * 4, &v[0]);
+	kernel.setArg(2, res);
+
+	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(1));
+	return res;
+}
+std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny){
+	cl::Buffer res = reflectBuf(v, u, tiny);
+	std::array<float, 4> vect;
+	tiny.ReadData(res, sizeof(float) * 4, &vect[0]);
+	return vect;
+}

@@ -24,5 +24,13 @@ int main(int argc, char** argv){
 	std::cout << "Householder matrix:\n";
 	logMatrix(hMat);
 
+	std::cout << "Reflecting [1, 2, 3, 4] about [0, 5, 0, 0]\n";
+	std::array<float, 4> x = { 1, 2, 3, 4 };
+	std::array<float, 4> refl = reflect(x, v, tiny);
+	std::cout << "Reflected vector:\n";
+	for (int i = 0; i < 4; ++i)
+		std::cout << std::setprecision(4) << std::setw(6) << refl[i];
+	std::cout << std::endl;
+
 	return 0;
 }

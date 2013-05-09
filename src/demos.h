@@ -118,3 +118,12 @@ cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny);
 * Compute the Householder matrix for a vector4
 */
 std::array<float, 16> householder(std::array<float, 4> vect, CL::TinyCL &tiny);
+/*
+* Reflect a vector v using the Householder matrix of u and get back the buffer
+* containing the result
+*/
+cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny);
+/*
+* Reflect a vector v using the Householder matrix of u and get back the result
+*/
+std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny);
