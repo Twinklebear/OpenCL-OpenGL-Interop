@@ -127,3 +127,12 @@ cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL
 * Reflect a vector v using the Householder matrix of u and get back the result
 */
 std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny);
+/*
+* Perform QR decomposition on a 4x4 matrix a and store results in q and r
+* I'm making this version out of the non-generic kernels I've built up 
+* Then I should make them generic. I'm not sure the benefits of this method
+* vs. the one kernel to do it all method shown in OpenCL in Action, I'm thinking
+* he may have done it that way b/c he wanted the example completely self contained?
+*/
+void qrDecomp(std::array<float, 16> &a, std::array<float, 16> &q, 
+	std::array<float, 16> &r, CL::TinyCL &tiny);
