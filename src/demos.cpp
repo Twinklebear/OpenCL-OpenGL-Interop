@@ -260,47 +260,21 @@ void bigDot(){
 		sum += result[i];
 	std::cout << "\nDot result: " << sum << std::endl;
 }
-void transpose(){
-	CL::TinyCL tiny(CL::DEVICE::GPU);
-	cl::Program prog = tiny.LoadProgram("../res/transpose.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
+cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny){
+	cl::Program prog = tiny.LoadProgram("../res/householder.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "householder");
 
-	//Setup the matrix
-	cl_uint matDim = 16;
-	float *matrix = new float[matDim * matDim];
-	for (size_t i = 0; i < matDim * matDim; ++i){
-		matrix[i] = i;
-	}
-	std::cout << "Initial matrix: ";
-	logMatrix(matrix, matDim, matDim);
-	//Setup matrix buffer
-	cl::Buffer bufMat = tiny.Buffer(CL::MEM::READ_WRITE, sizeof(float) * matDim * matDim, matrix);
-	//Setup local mem params and the size param
-	size_t localMem = tiny.mDevices.at(0).getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
-	cl_uint nBlocks = matDim / 4;
+	cl::Buffer res = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * 16);
 
-	//Pass kernel arguments
-	kernel.setArg(0, bufMat);
-	kernel.setArg(1, localMem , NULL);
-	kernel.setArg(2, sizeof(nBlocks), &nBlocks);
+	kernel.setArg(0, sizeof(float) * 4, &vect[0]);
+	kernel.setArg(1, res);
 
-	//Figure out local and global size
-	size_t globalSize = (matDim / 4 * (matDim / 4 + 1)) / 2;
-	cl::NDRange global(globalSize);
-
-	tiny.RunKernel(kernel, cl::NullRange, global);
-
-	//Read the transposed matrix result
-	tiny.ReadData(bufMat, sizeof(float) * matDim * matDim, matrix);
-	std::cout << "Transposed: ";
-	logMatrix(matrix, matDim, matDim);
+	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(1));
+	return res;
 }
-void logMatrix(float *mat, size_t m, size_t n){
-	std::cout << std::setprecision(4) << '\n';
-	for (size_t i = 0; i < m * n; ++i){
-		if (i % m == 0 && i != 0)
-			std::cout << '\n';
-		std::cout << std::setw(6) << mat[i] << " ";
-	}
-	std::cout << "\n";
+std::array<float, 16> householder(std::array<float, 4> vect, CL::TinyCL &tiny){
+	cl::Buffer res = householderBuf(vect, tiny);
+	std::array<float, 16> mat;
+	tiny.ReadData(res, sizeof(float) * 16, &mat[0]);
+	return mat;
 }

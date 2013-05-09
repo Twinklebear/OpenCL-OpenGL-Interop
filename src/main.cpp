@@ -18,5 +18,11 @@ int main(int argc, char** argv){
 	std::cout << "Multiplication result:\n";
 	logMatrix(multRes);
 
+	std::cout << "Computing householder matrix for [0, 5, 0, 0]\n";
+	std::array<float, 4> v = { 0, 5, 0, 0 };
+	std::array<float, 16> hMat = householder(v, tiny);
+	std::cout << "Householder matrix:\n";
+	logMatrix(hMat);
+
 	return 0;
 }

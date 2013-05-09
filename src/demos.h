@@ -17,29 +17,25 @@ void liveAdvectTexture();
 * This is not an interop program, just a standard math operation
 */
 void bigDot();
-/*
-* This performs a matrix transpose operation on matrices of 4n x 4n size
-*/
-void transpose();
-//Helper function, print an MxN matrix
-void logMatrix(float *mat, size_t m, size_t n);
+//Log a matrix to console
 template<size_t N>
 void logMatrix(const std::array<float, N> &mat){
 	std::cout << std::setprecision(4) << '\n';
 	for (size_t i = 0; i < N; ++i){
 		if (i % static_cast<int>(std::sqrt(N)) == 0 && i != 0)
 			std::cout << '\n';
-		std::cout << std::setw(6) << mat[i] << " ";
+		std::cout << std::setw(8) << mat[i] << " ";
 	}
 	std::cout << "\n";
 }
 /*
-* Transpose the passed in matrix using the tinycl context provided and return
-* the transposed matrix
+* Transpose the passed in matrix using the tinycl context and return the
+* cl::Buffer containing the result. This should be used if the result 
+* of the operation is needed for future OpenCL kernels
 * Note: the matrix must be of size 4nx4n 
 */
 template<size_t N>
-std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
+cl::Buffer transposeBuf(std::array<float, N> &matrix, CL::TinyCL &tiny){
 	cl::Program prog = tiny.LoadProgram("../res/transpose.cl");
 	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
 
@@ -60,11 +56,44 @@ std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
 	cl::NDRange global(globalSize);
 
 	tiny.RunKernel(kernel, cl::NullRange, global);
-
-	//Read the transposed matrix result
+	return bufMat;
+}
+/*
+* Transpose the passed in matrix using the tinycl context provided and return
+* the transposed matrix
+* Note: the matrix must be of size 4nx4n 
+*/
+template<size_t N>
+std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
+	cl::Buffer bufMat = transposeBuf(matrix, tiny);
+	//Read and return
 	std::array<float, N> res;
 	tiny.ReadData(bufMat, sizeof(float) * N, &res[0]);
 	return res;
+}
+/*
+* Multiply matrix a by matrix b and get back the result, c
+* c = a * b
+* using the OpenCL context passed and return the cl::Buffer containing the result
+* this should be used if the result of the operation is needed for future OpenCL use
+*/
+template<size_t N>
+cl::Buffer matrixMultBuf(std::array<float, N> &a, std::array<float, N> &b, CL::TinyCL &tiny){
+	cl::Program prog = tiny.LoadProgram("../res/matrixmult.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "matrixMult");
+
+	size_t nRows = static_cast<size_t>(std::sqrt(N));
+	//Setup a, b, c matrix buffers
+	cl::Buffer aBuf = tiny.Buffer(CL::MEM::READ_ONLY, sizeof(float) * N, &a[0]);
+	cl::Buffer bBuf = transposeBuf(b, tiny);
+	cl::Buffer cBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * N);
+
+	kernel.setArg(0, aBuf);
+	kernel.setArg(1, bBuf);
+	kernel.setArg(2, cBuf);
+
+	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(nRows));
+	return cBuf;
 }
 /*
 * Multiply matrix a by matrix b and get back the result, c
@@ -73,27 +102,19 @@ std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
 */
 template<size_t N>
 std::array<float, N> matrixMult(std::array<float, N> &a, std::array<float, N> &b, CL::TinyCL &tiny){
-	//First we need the transpose of b to multiply against, b/c the kernel does the multiplication
-	//in blocks summing up dot products of float4 vectors making up each row/col
-	std::array<float, N> bTrans = transpose(b, tiny);
-
-	cl::Program prog = tiny.LoadProgram("../res/matrixmult.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "matrixMult");
-
-	size_t nRows = static_cast<size_t>(std::sqrt(N));
-	//Setup a, b, c matrix buffers
-	cl::Buffer aBuf = tiny.Buffer(CL::MEM::READ_ONLY, sizeof(float) * N, &a[0]);
-	cl::Buffer bBuf = tiny.Buffer(CL::MEM::READ_ONLY, sizeof(float) * N, &bTrans[0]);
-	cl::Buffer cBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * N);
-
-	kernel.setArg(0, aBuf);
-	kernel.setArg(1, bBuf);
-	kernel.setArg(2, cBuf);
-
-	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(nRows));
-
-	//Read the multiplication result
+	cl::Buffer bufMat = matrixMultBuf(a, b, tiny);
+	//Read and return
 	std::array<float, N> res;
-	tiny.ReadData(cBuf, sizeof(float) * N, &res[0]);
+	tiny.ReadData(bufMat, sizeof(float) * N, &res[0]);
 	return res;
 }
+/*
+* Compute Householder matrix for vector4 but return the cl::Buffer
+* this should be used if the result of the computation is needed in future
+* kernels to avoid reading/writing back and forth to the GPU
+*/
+cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny);
+/*
+* Compute the Householder matrix for a vector4
+*/
+std::array<float, 16> householder(std::array<float, 4> vect, CL::TinyCL &tiny);
