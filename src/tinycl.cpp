@@ -47,13 +47,7 @@ cl::Program CL::TinyCL::LoadProgram(std::string file){
 }
 cl::Kernel CL::TinyCL::LoadKernel(const cl::Program &prog, std::string kernel){
 	try {
-		cl::Kernel kernel(prog, kernel.c_str());
-		std::cout << "Kernel info--\n"
-			<< "max work group size: " << kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(mDevices.at(0)) << "\n"
-			<< "preferred work group size: " 
-			<< kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(mDevices.at(0))
-			<< std::endl;
-		return kernel;
+		return cl::Kernel(prog, kernel.c_str());
 	}
 	catch (const cl::Error &e){
 		std::cout << "Error getting kernel: " << e.what() 

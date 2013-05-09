@@ -268,7 +268,7 @@ void transpose(){
 	//Setup the matrix
 	cl_uint matDim = 16;
 	float *matrix = new float[matDim * matDim];
-	for (int i = 0; i < matDim * matDim; ++i){
+	for (size_t i = 0; i < matDim * matDim; ++i){
 		matrix[i] = i;
 	}
 	std::cout << "Initial matrix: ";

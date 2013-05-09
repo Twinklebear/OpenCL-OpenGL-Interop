@@ -33,6 +33,6 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	dbgData[coord.x + coord.y * 256] = (float2)(x_n.x, x_nS.x);
 
 	//Now sample the value where we "started" and set the next value at x_n to that one
-	float4 tVal = read_imagef(inImg, nearest, x_nS);
+	float4 tVal = read_imagef(inImg, linear, x_nS);
 	write_imagef(outImg, coord, tVal);
 }
