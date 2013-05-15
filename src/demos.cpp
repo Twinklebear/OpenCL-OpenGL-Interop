@@ -263,6 +263,8 @@ void bigDot(){
 	std::cout << "\nDot result: " << sum << std::endl;
 }
 void openglCompute(){
+	//Note: Compute shaders are only OpenGL 4.3+ so my laptop can't run this, since
+	//it's on 4.0
 	Window::Init();
 	Window window("OpenGL Compute - Nothing will be drawn");
 	GLenum err = glewInit();
