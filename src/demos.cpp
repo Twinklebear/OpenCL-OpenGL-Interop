@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <GL/glew.h>
 #include <SDL.h>
 #include <SDL_opengl.h>
 #include <CL/cl.hpp>
@@ -21,6 +22,7 @@
 #include "demos.h"
 
 void liveAdvectTexture(){
+	Window::Init();
 	Window window("Realtime Texture Advection");
 	//Set an fps cap
 	const float FPS = 60.0f;
@@ -259,6 +261,49 @@ void bigDot(){
 	for (int i = 0; i < nElem / 4; ++i)
 		sum += result[i];
 	std::cout << "\nDot result: " << sum << std::endl;
+}
+void openglCompute(){
+	Window::Init();
+	Window window("OpenGL Compute - Nothing will be drawn");
+
+	//This shader declares local group size to be 16x16 then does nothing
+	const char *shaderSrc = 
+		"#version 430 core \n \
+		//Input layout qualifier declaring a 16x16 local workgroup size \n \
+		layout (local_size_x = 16, local_size_y = 16) in; \n \
+		void main() { }";
+
+	GLenum err = glewInit();
+	if (err != GLEW_OK){
+		std::cout << "Glew error: " << glewGetErrorString(err) << std::endl;
+		return;
+	}
+
+	GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
+	glShaderSource(shader, 1, &shaderSrc, NULL);
+	glCompileShader(shader);
+	GLint status;
+	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+	if (status != GL_TRUE)
+		std::cout << "Compile failed" << std::endl;
+
+	GLuint program = glCreateProgram();
+	glAttachShader(program, shader);
+	glLinkProgram(program);
+	glGetProgramiv(program, GL_LINK_STATUS, &status);
+	if (status != GL_TRUE)
+		std::cout << "Link failed" << std::endl;
+
+	glUseProgram(program);
+	
+	GLuint globalDim[] = { 16, 16, 1 };
+	GLuint dispatchBuf;
+	glGenBuffers(1, &dispatchBuf);
+	glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, dispatchBuf);
+	glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(globalDim), globalDim, GL_STATIC_DRAW);
+	glDispatchComputeIndirect(0);
+
+	std::cout << "Error? " << glGetError() << std::endl;
 }
 cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny){
 	cl::Program prog = tiny.LoadProgram("../res/householder.cl");

@@ -41,5 +41,7 @@ int main(int argc, char** argv){
 		std::cout << std::setprecision(4) << std::setw(8) << c[i];
 	std::cout << std::endl;
 
+	openglCompute();
+
 	return 0;
 }

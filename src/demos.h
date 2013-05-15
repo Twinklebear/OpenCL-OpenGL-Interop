@@ -17,6 +17,8 @@ void liveAdvectTexture();
 * This is not an interop program, just a standard math operation
 */
 void bigDot();
+//Perform a basic computation using an OpenGL Compute shader instead of OpenCL
+void openglCompute();
 //Log a matrix to console
 template<size_t N>
 void logMatrix(const std::array<float, N> &mat){
