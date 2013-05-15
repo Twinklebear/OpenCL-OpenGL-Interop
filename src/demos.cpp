@@ -310,6 +310,7 @@ void openglCompute(){
 	if (status != GL_TRUE)
 		std::cout << "Link failed" << std::endl;
 
+	glDeleteShader(shader);
 	glUseProgram(program);
 	
 	//Setup the data buffer
@@ -337,6 +338,11 @@ void openglCompute(){
 	std::cout << std::endl;
 	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
 	outData = nullptr;
+
+	//cleanup
+	glDeleteBuffers(1, &dataBuf);
+	glDeleteBuffers(1, &dispatchBuf);
+	glDeleteProgram(program);
 }
 cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny){
 	cl::Program prog = tiny.LoadProgram("../res/householder.cl");
