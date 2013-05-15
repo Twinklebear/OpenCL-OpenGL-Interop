@@ -265,27 +265,43 @@ void bigDot(){
 void openglCompute(){
 	Window::Init();
 	Window window("OpenGL Compute - Nothing will be drawn");
-
-	//This shader declares local group size to be 16x16 then does nothing
-	const char *shaderSrc = 
-		"#version 430 core \n \
-		//Input layout qualifier declaring a 16x16 local workgroup size \n \
-		layout (local_size_x = 16, local_size_y = 16) in; \n \
-		void main() { }";
-
 	GLenum err = glewInit();
 	if (err != GLEW_OK){
 		std::cout << "Glew error: " << glewGetErrorString(err) << std::endl;
 		return;
 	}
 
+	//This shader declares local group size to be 16x16 then does nothing
+	const char *doNothingSrc = 
+		"#version 430 core \n \
+		//Input layout qualifier declaring a 16x16 local workgroup size \n \
+		//It looks like a big bonus for Opencl is being able to set this at runtime \
+		//Whereas in OpenGL compute shader it must be in the shader, although I suppose we could \
+		//change that somehow? hm \
+		layout (local_size_x = 16, local_size_y = 1) in; \n \
+		void main() { }";
+
+	std::string src = Util::ReadFile("../res/helloCompute.glsl");
+
+	const char *shaderSrc = src.c_str();
+
 	GLuint shader = glCreateShader(GL_COMPUTE_SHADER);
 	glShaderSource(shader, 1, &shaderSrc, NULL);
 	glCompileShader(shader);
 	GLint status;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-	if (status != GL_TRUE)
+	if (status != GL_TRUE){
 		std::cout << "Compile failed" << std::endl;
+		//Get the log length and then get the log
+        GLint logLength;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+        std::vector<char> log(logLength);
+        glGetShaderInfoLog(shader, logLength, NULL, &log[0]);
+
+        //Construct and return log message
+        std::string errorMsg(log.begin(), log.end());
+        std::cout << errorMsg << std::endl;
+	}
 
 	GLuint program = glCreateProgram();
 	glAttachShader(program, shader);
@@ -296,14 +312,31 @@ void openglCompute(){
 
 	glUseProgram(program);
 	
-	GLuint globalDim[] = { 16, 16, 1 };
+	//Setup the data buffer
+	GLuint dataBuf;
+	glGenBuffers(1, &dataBuf);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, dataBuf);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint) * 16, NULL, GL_DYNAMIC_COPY);
+	//Bind it as the 0th shader storage buffer binding pt
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, dataBuf);
+
+	GLuint globalDim[] = { 16, 1, 1 };
 	GLuint dispatchBuf;
 	glGenBuffers(1, &dispatchBuf);
 	glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, dispatchBuf);
 	glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(globalDim), globalDim, GL_STATIC_DRAW);
 	glDispatchComputeIndirect(0);
 
-	std::cout << "Error? " << glGetError() << std::endl;
+	std::cout << "Error? " << std::hex << glGetError() << std::endl;
+
+	//Now read out the results, interesting that they print as [0-9] then [a-f]
+	int *outData = (int*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+	std::cout << "Data read: ";
+	for (int i = 0; i < 16; ++i)
+		std::cout << outData[i] << ", ";
+	std::cout << std::endl;
+	glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+	outData = nullptr;
 }
 cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny){
 	cl::Program prog = tiny.LoadProgram("../res/householder.cl");
