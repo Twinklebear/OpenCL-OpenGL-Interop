@@ -9,7 +9,7 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	write_only image2d_t outImg, __global float2 *dbgData)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
-	float2 x_n = convert_float2(coord) / convert_float2(get_image_dim(inImg));
+	float2 x_n = (convert_float2(coord) + (float2)(0.5f, 0.5f)) / convert_float2(get_image_dim(inImg));
 
 	float2 v = *vel;
 	if (x_n.y > 0.5f)

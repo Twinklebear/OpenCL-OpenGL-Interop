@@ -2,6 +2,9 @@
 #include "demos.h"
 
 int main(int argc, char** argv){
+	liveAdvectTexture();
+	return 0;
+
 	const size_t matSize = 4 * 4;
 	std::array<float, matSize> mat;
 	for (int i = 0; i < matSize; ++i)
@@ -40,8 +43,6 @@ int main(int argc, char** argv){
 	for (int i = 0; i < 4; ++i)
 		std::cout << std::setprecision(4) << std::setw(8) << c[i];
 	std::cout << std::endl;
-
-	openglCompute();
 
 	return 0;
 }
