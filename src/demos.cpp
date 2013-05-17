@@ -6,13 +6,11 @@
 #include <iomanip>
 #include <GL/glew.h>
 #include <SDL.h>
-#include <SDL_opengl.h>
 #include <CL/cl.hpp>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 #include <window.h>
 #include <util.h>
-#include <glfunctions.h>
 #include <glshader.h>
 #include <glprogram.h>
 #include <glvertexbuffer.h>
@@ -21,37 +19,47 @@
 #include "tinycl.h"
 #include "demos.h"
 
+const std::array<glm::vec3, 8> quad = {
+	//Vertex positions
+	glm::vec3(-1.0, -1.0, 0.0),
+	glm::vec3(1.0, -1.0, 0.0),
+	glm::vec3(-1.0, 1.0, 0.0),
+	glm::vec3(1.0, 1.0, 0.0),
+	//UV coords
+	glm::vec3(0.0, 0.0, 0.0),
+	glm::vec3(1.0, 0.0, 0.0),
+	glm::vec3(0.0, 1.0, 1.0),
+	glm::vec3(1.0, 1.0, 0.0)
+};
+const std::array<unsigned short, 6> quadElems = {
+	0, 1, 2,
+	1, 3, 2
+};
 void liveAdvectTexture(){
 	Window::Init();
 	Window window("Realtime Texture Advection");
 	//Set an fps cap
 	const float FPS = 60.0f;
 
-	//Load and setup a square plane that we can draw the texture too
-	std::vector<glm::vec3> verts;
-	std::vector<unsigned short> indices;
-	Util::LoadObj("../res/square.obj", verts, indices);
-	GL::VertexBuffer vbo(verts);
+	//Setup a quad to draw too
 	GL::VertexArray vao;
-	vao.Reference(vbo, "vbo");
-	vao.ElementBuffer(indices);
+	vao.elementBuffer(quadElems);
+	GL::VertexBuffer vbo(quad, GL::USAGE::STATIC_DRAW);	
+
 	//Setup program
 	GL::Program prog("../res/shader.v.glsl", "../res/shader.f.glsl");
+	
 	//Setup the attributes
-	vao.SetAttribPointer("vbo", prog.GetAttribute("position"), 3, GL_FLOAT, GL_FALSE, 3 * sizeof(glm::vec3), 0);
-	vao.SetAttribPointer("vbo", prog.GetAttribute("texIn"), 3, GL_FLOAT, GL_FALSE, 
-		3 * sizeof(glm::vec3), (void*)(sizeof(glm::vec3) * 2));
-
+	vao.setAttribPointer(vbo, prog.getAttribute("position"), 3, GL_FLOAT, GL_FALSE);
+	vao.setAttribPointer(vbo, prog.getAttribute("texIn"), 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof(glm::vec3) * 4));
+	
 	glm::mat4 view = glm::lookAt<float>(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
 	glm::mat4 proj = glm::perspective(60.0f, (float)(window.Box().w) /  (float)(window.Box().h), 0.1f, 100.0f);
-	glm::mat4 model = glm::scale(0.5f, 0.5f, 1.0f);
+	//Curious why translating back -1.0f in z causes the texture to flicker. could it be a mip-maps thing?
+	glm::mat4 model = glm::scale(0.55f, 0.55f, 1.0f);
 	glm::mat4 mvp = proj * view * model;
-	prog.UniformMat4x4("mvp", mvp);
+	prog.uniformMat4x4("mvp", mvp);
 
-	//Setup our OpenCL context + program and kernel
-	CL::TinyCL tiny(CL::DEVICE::GPU, true);
-	cl::Program program = tiny.LoadProgram("../res/simpleAdvect.cl");
-	cl::Kernel kernel = tiny.LoadKernel(program, "simpleAdvect");
 	/*
 	* I don't think OpenCL or OpenGL provide a simple method for copying images/textures so 
 	* instead we'll flip the in/out image each step and draw the out image by setting active = out
@@ -61,6 +69,12 @@ void liveAdvectTexture(){
 	GL::Texture texB("../res/blank.png");
 	//Active is the actual texture we will draw
 	GL::Texture active = texB;
+
+	//Setup our OpenCL context + program and kernel
+	CL::TinyCL tiny(CL::DEVICE::GPU, true);
+	cl::Program program = tiny.LoadProgram("../res/simpleAdvect.cl");
+	cl::Kernel kernel = tiny.LoadKernel(program, "simpleAdvect");
+
 	//Setup our OpenCL data
 #ifdef CL_VERSION_1_2
 	cl::ImageGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
@@ -72,18 +86,17 @@ void liveAdvectTexture(){
 	const float speed = 0.2f;
 	float velocity[2] = { 0.0f, 0.0f };
 	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
-	//Debug buffer, write velocities out
-	float *dbgData = new float[256 * 256 * 2];
-	cl::Buffer dbgBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, 256 * 256 * 2 * sizeof(float));
+
 	//Setup our GL objects vector
 	std::vector<cl::Memory> glObjs;
 	glObjs.push_back(imgA);
 	glObjs.push_back(imgB);
+
 	//The time step will be constant and velocity won't change each step, so set'em now
 	float dt = 1.0f / FPS;
 	kernel.setArg(0, sizeof(float), &dt);
 	kernel.setArg(1, velBuf);
-	kernel.setArg(4, dbgBuf);
+	
 	//Query the preferred work group size
 	int workSize = tiny.PreferredWorkSize(kernel);
 	//fixed for now
@@ -98,7 +111,7 @@ void liveAdvectTexture(){
 	//Limit framerate with a timer
 	Timer delta;
 	//For tracking if we want to quit
-	bool quit = false, paused = false, printDbg = true;
+	bool quit = false, paused = false;
 	while (!quit){
 		delta.Start();
 		//Event Polling
@@ -144,38 +157,9 @@ void liveAdvectTexture(){
 				}
 			}
 		}
-		//When we pause read out and print the velocity information
-		if (paused && printDbg){
-			printDbg = false;
-			tiny.ReadData(dbgBuf, 256 * 256 * 2, dbgData);
-			//Print only the bottom and top rows, note that 0, 0 denotes the
-			//bottom left corner on the image
-			std::cout << "Bottom row:\n";
-			for (int i = 0; i < 1 * 2; ++i){
-				if (i % 2 == 0){
-					std::cout << "\n" << "idx: " << i 
-						<< " x,y: " << (i / 2) % 256 << ", "
-						<< (i / 2 - (i / 2) % 256) / 256 << " val: ";
-				}
-				std::cout << dbgData[i] << ", ";
-			}
-			//std::cout << "\n\nLowrow:\n";
-			//Why do I get nothing at row 64 and up?
-			//int row = 64;
-			//for (int i = row * 256 * 2; i < row * 256 * 2 + 256 * 2; ++i){
-			//	if (i % 2 == 0){
-			//		std::cout << "\n" << "idx: " << i 
-			//			<< " x,y: " << (i / 2) % 256 << ", "
-			//			<< (i / 2 - (i / 2) % 256) / 256 << " val: ";
-			//	}
-			//	std::cout << dbgData[i] << ", ";
-			//}
-			std::cout << std::endl;
-		}
 		//Run the kernel, setting the in/out textures properly. On even runs the output will be
 		//in texB, on odd runs output will be in texA
 		if (!paused){
-			printDbg = true;
 			try {
 				//On even runs and the first run texB/imgB is our output, on odd runs it's flipped
 				//Is this really the best way to do this? Maybe there is some faster way to copy the image over
@@ -205,14 +189,19 @@ void liveAdvectTexture(){
 		}
 		//RENDERING
 		window.Clear();
-		window.DrawElementsTextured(vao, prog, active, GL_TRIANGLES, vao.NumElements("elem"));
+
+		prog.use();
+		glBindVertexArray(vao);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texA);
+		glDrawElements(GL_TRIANGLES, vao.numElements(), GL_UNSIGNED_SHORT, NULL);
+
 		window.Present();
 
 		//Cap fps
 		if (delta.Ticks() < 1000 / FPS)
 			SDL_Delay(1000 / FPS - delta.Ticks());
 	}
-	delete dbgData;
 	Window::Quit();
 }
 void bigDot(){
@@ -283,7 +272,7 @@ void openglCompute(){
 		layout (local_size_x = 16, local_size_y = 1) in; \n \
 		void main() { }";
 
-	std::string src = Util::ReadFile("../res/helloCompute.glsl");
+	std::string src = Util::readFile("../res/helloCompute.glsl");
 
 	const char *shaderSrc = src.c_str();
 

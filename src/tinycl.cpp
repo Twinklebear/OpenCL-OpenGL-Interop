@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
+#include <GL/glew.h>
 #include <CL/opencl.h>
 #include <CL/cl.hpp>
 #include <util.h>
@@ -28,7 +29,7 @@ CL::TinyCL::TinyCL(DEVICE dev, bool interop){
 cl::Program CL::TinyCL::LoadProgram(std::string file){
 	cl::Program program;
 	try {
-		std::string content = Util::ReadFile(file);
+		std::string content = Util::readFile(file);
 		cl::Program::Sources source(1, std::make_pair(content.c_str(), content.size()));
 		program = cl::Program(mContext, source);
 		program.build(mDevices);

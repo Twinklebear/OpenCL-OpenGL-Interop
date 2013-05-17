@@ -4,16 +4,12 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
+#include <GL/glew.h>
 #include <CL/opencl.h>
 #include <CL/cl.hpp>
 #include <glvertexbuffer.h>
 #include <glvertexarray.h>
 #include <gltexture.h>
-
-namespace Util {
-	std::string ReadFile(const std::string &file);
-}
-
 
 namespace CL {
 	enum DEVICE { CPU = CL_DEVICE_TYPE_CPU, GPU = CL_DEVICE_TYPE_GPU };
