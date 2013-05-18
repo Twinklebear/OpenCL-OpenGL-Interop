@@ -94,8 +94,9 @@ namespace CL {
 		* @param buf The device buffer to read from
 		* @param dataSize The size of the data to read
 		* @param data Where to put the data
+		* @param offset Offset in the buffer to start reading from
 		*/
-		void ReadData(const cl::Buffer &buf, size_t dataSize, void *data);
+		void ReadData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset = 0);
 		/*
 		* Read the image data from some kernel image argument into data
 		* @param img The device image data to read from

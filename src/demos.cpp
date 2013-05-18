@@ -215,8 +215,8 @@ void bigDot(){
 	float vecA[nElem] = {0};
 	float vecB[nElem] = {0};
 	for (int i = 0; i < nElem; ++i){
-		vecA[i] = i;
-		vecB[i] = nElem - i;
+		vecA[i] = (float)i;
+		vecB[i] = (float)(nElem - i);
 	}
 	//Print the vectors
 	std::cout << "vect a: ";
@@ -374,10 +374,11 @@ std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL:
 	tiny.ReadData(res, sizeof(float) * 4, &vect[0]);
 	return vect;
 }
-void conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny){
+std::shared_ptr<std::vector<float>>
+conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny){
 	if (bVec.size() != matrix.dim){
 		std::cout << "b vector does not match A dim" << std::endl;
-		return;
+		return nullptr;
 	}
 	cl::Program prog = tiny.LoadProgram("../res/conjGrad.cl");
 	cl::Kernel kernel = tiny.LoadKernel(prog, "conjGrad");
@@ -412,16 +413,20 @@ void conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::Tiny
 	tiny.RunKernel(kernel, dim, dim);
 
 	//Read results
-	float *res = new float[2 + dim];
-	tiny.ReadData(resBuf, (2 + dim) * sizeof(float), res);
-	std::cout << "After: " << res[0] << " iterations, the residual length is: " << res[1]
-		<< "\nx vector:\n";
-	for (int i = 2; i < dim + 2; ++i)
-		std::cout << res[i] << "\n";
-	std::cout << std::endl;
+	float info[2];
+	tiny.ReadData(resBuf, 2 * sizeof(float), info);
+	std::cout << "After: " << info[0] << " iterations, the residual length is: " << info[1] << std::endl;
+
+	//Read the solved x vector
+	std::shared_ptr<std::vector<float>> x = std::make_shared<std::vector<float>>();
+	x->reserve(dim);
+	//&((*x[0])) looks bizarre but we're derefencing the shared ptr then getting the address 
+	//of the first element in the underlying array so that we can read the data into it
+	tiny.ReadData(resBuf, dim * sizeof(float), &((*x)[0]), 2 * sizeof(float));
 
 	delete[] rows;
 	delete[] cols;
 	delete[] vals;
-	delete[] res;
+	
+	return x;
 }

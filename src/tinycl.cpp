@@ -107,9 +107,9 @@ void CL::TinyCL::WriteData(const cl::Image &img, cl::size_t<3> origin, cl::size_
 	//Is 0, 0 right for row/slice pitch?
 	mQueue.enqueueWriteImage(img, CL_TRUE, origin, region, 0, 0, pixels);
 }
-void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data){
+void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset){
 	try {
-		mQueue.enqueueReadBuffer(buf, CL_TRUE, 0, dataSize, data);
+		mQueue.enqueueReadBuffer(buf, CL_TRUE, offset, dataSize, data);
 		mQueue.finish();
 	}
 	catch (const cl::Error &e){
