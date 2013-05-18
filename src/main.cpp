@@ -3,7 +3,7 @@
 #include "demos.h"
 
 int main(int argc, char** argv){
-	SparseMatrix matrix("../res/bcsstk05.mtx", false);
+	SparseMatrix matrix("../res/bcsstk01.mtx");
 
 	//Now try getting the raw values
 	int *row = new int[matrix.elements.size()];
@@ -11,9 +11,9 @@ int main(int argc, char** argv){
 	float *val = new float[matrix.elements.size()];
 	matrix.getRaw(row, col, val);
 
-	for (size_t i = 0; i < matrix.elements.size(); ++i)
-		std::cout << row[i] << " " << col[i] << " " << val[i] << "\n";
-	std::cout << std::endl;
+	delete[] row;
+	delete[] col;
+	delete[] val;
 
 	return 0;
 }

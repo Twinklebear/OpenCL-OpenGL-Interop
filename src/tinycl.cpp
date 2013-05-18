@@ -149,7 +149,7 @@ void CL::TinyCL::SelectDevice(DEVICE dev){
 			<< "\nDriver Version: " << mDevices.at(0).getInfo<CL_DRIVER_VERSION>() 
 			<< "\nDevice Profile: " << mDevices.at(0).getInfo<CL_DEVICE_PROFILE>() 
 			<< "\nDevice Version: " << mDevices.at(0).getInfo<CL_DEVICE_VERSION>()
-			<< "\nPreferred local mem size: " << mDevices.at(0).getInfo<CL_DEVICE_LOCAL_MEM_SIZE>() / 1024.0f << " kB"
+			<< "\nMax Work Group Size: " << mDevices.at(0).getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()
 			<< std::endl;
 		mContext = cl::Context(mDevices);
 		mQueue = cl::CommandQueue(mContext, mDevices.at(0));
@@ -200,6 +200,7 @@ void CL::TinyCL::SelectInteropDevice(DEVICE dev){
 			<< "\nDriver Version: " << mDevices.at(0).getInfo<CL_DRIVER_VERSION>() 
 			<< "\nDevice Profile: " << mDevices.at(0).getInfo<CL_DEVICE_PROFILE>() 
 			<< "\nDevice Version: " << mDevices.at(0).getInfo<CL_DEVICE_VERSION>()
+			<< "\nMax Work Group Size: " << mDevices.at(0).getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()
 			<< std::endl;
 	}
 	catch (const cl::Error &e){

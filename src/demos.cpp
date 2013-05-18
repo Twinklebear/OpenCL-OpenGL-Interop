@@ -373,8 +373,3 @@ std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL:
 	tiny.ReadData(res, sizeof(float) * 4, &vect[0]);
 	return vect;
 }
-void qrDecomp(std::array<float, 16> &a, std::array<float, 16> &q, 
-	std::array<float, 16> &r, CL::TinyCL &tiny)
-{
-
-}
