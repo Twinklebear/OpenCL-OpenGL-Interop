@@ -118,6 +118,12 @@ namespace CL {
 		* @return Preferred work group size
 		*/
 		int PreferredWorkSize(const cl::Kernel &kernel);
+		/*
+		* Get the max work group size for a kernel on the device
+		* @param kernel Kernel to get max work group size of
+		* @return Max work group size
+		*/
+		int maxWorkGroupSize(const cl::Kernel &kernel);
 
 	private:
 		/**

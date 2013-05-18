@@ -133,7 +133,7 @@ cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL
 std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny);
 /*
 * Solve a linear system Ax = b (where A is sparse) using the Conjugate Gradient method
-* and return the solved x vector. x could be really big so we return a shared_ptr
+* and return the solved x vector. With C++11 move constructor we should be ok just returning
+* the vector 
 */
-std::shared_ptr<std::vector<float>>
-conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny);
+std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny);

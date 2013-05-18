@@ -81,7 +81,6 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 				//Also account for # off diagonal elements
 				if (symmetric)
 					l += l - n;
-				std::cout << "nRow nCol nVals: " << m << " " << n << " " << l << std::endl;
 				dim = m;
 				elements.reserve(l);
 			}

@@ -213,3 +213,6 @@ void CL::TinyCL::SelectInteropDevice(DEVICE dev){
 int CL::TinyCL::PreferredWorkSize(const cl::Kernel &kernel){
 	return kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(mDevices.at(0));
 }
+int CL::TinyCL::maxWorkGroupSize(const cl::Kernel &kernel){
+	return kernel.getWorkGroupInfo<CL_KERNEL_WORK_GROUP_SIZE>(mDevices.at(0));
+}
