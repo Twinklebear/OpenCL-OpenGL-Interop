@@ -40,12 +40,12 @@ void logMatrix(const std::array<float, N> &mat){
 */
 template<size_t N>
 cl::Buffer transposeBuf(std::array<float, N> &matrix, CL::TinyCL &tiny){
-	cl::Program prog = tiny.LoadProgram("../res/transpose.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "transpose");
+	cl::Program prog = tiny.loadProgram("../res/transpose.cl");
+	cl::Kernel kernel = tiny.loadKernel(prog, "transpose");
 
 	size_t matDim = static_cast<size_t>(std::sqrt(N));
 	//Setup matrix buffer
-	cl::Buffer bufMat = tiny.Buffer(CL::MEM::READ_WRITE, sizeof(float) * N, &matrix[0]);
+	cl::Buffer bufMat = tiny.buffer(CL::MEM::READ_WRITE, sizeof(float) * N, &matrix[0]);
 	//Setup local mem params and the size param
 	size_t localMem = tiny.mDevices.at(0).getInfo<CL_DEVICE_LOCAL_MEM_SIZE>();
 	cl_uint nBlocks = matDim / 4;
@@ -59,7 +59,7 @@ cl::Buffer transposeBuf(std::array<float, N> &matrix, CL::TinyCL &tiny){
 	size_t globalSize = (matDim / 4 * (matDim / 4 + 1)) / 2;
 	cl::NDRange global(globalSize);
 
-	tiny.RunKernel(kernel, cl::NullRange, global);
+	tiny.runKernel(kernel, cl::NullRange, global);
 	return bufMat;
 }
 /*
@@ -72,7 +72,7 @@ std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
 	cl::Buffer bufMat = transposeBuf(matrix, tiny);
 	//Read and return
 	std::array<float, N> res;
-	tiny.ReadData(bufMat, sizeof(float) * N, &res[0]);
+	tiny.readData(bufMat, sizeof(float) * N, &res[0]);
 	return res;
 }
 /*
@@ -88,15 +88,15 @@ cl::Buffer matrixMultBuf(std::array<float, N> &a, std::array<float, N> &b, CL::T
 
 	size_t nRows = static_cast<size_t>(std::sqrt(N));
 	//Setup a, b, c matrix buffers
-	cl::Buffer aBuf = tiny.Buffer(CL::MEM::READ_ONLY, sizeof(float) * N, &a[0]);
+	cl::Buffer aBuf = tiny.buffer(CL::MEM::READ_ONLY, sizeof(float) * N, &a[0]);
 	cl::Buffer bBuf = transposeBuf(b, tiny);
-	cl::Buffer cBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * N);
+	cl::Buffer cBuf = tiny.buffer(CL::MEM::WRITE_ONLY, sizeof(float) * N);
 
 	kernel.setArg(0, aBuf);
 	kernel.setArg(1, bBuf);
 	kernel.setArg(2, cBuf);
 
-	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(nRows));
+	tiny.runKernel(kernel, cl::NullRange, cl::NDRange(nRows));
 	return cBuf;
 }
 /*
@@ -109,7 +109,7 @@ std::array<float, N> matrixMult(std::array<float, N> &a, std::array<float, N> &b
 	cl::Buffer bufMat = matrixMultBuf(a, b, tiny);
 	//Read and return
 	std::array<float, N> res;
-	tiny.ReadData(bufMat, sizeof(float) * N, &res[0]);
+	tiny.readData(bufMat, sizeof(float) * N, &res[0]);
 	return res;
 }
 /*

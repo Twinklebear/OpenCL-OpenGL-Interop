@@ -27,9 +27,9 @@ namespace CL {
 		*/
 		TinyCL(DEVICE dev, bool interop = false);
 		//Load a Program for use
-		cl::Program LoadProgram(std::string file);
+		cl::Program loadProgram(std::string file);
 		//Load a kernel from a program
-		cl::Kernel LoadKernel(const cl::Program &prog, std::string kernel);
+		cl::Kernel loadKernel(const cl::Program &prog, std::string kernel);
 		/*
 		* Create a cl::Buffer and pass some data to it if desired
 		* @param mem The type of memory the buffer is (read, write, read&write)
@@ -38,14 +38,14 @@ namespace CL {
 		*       the buffer will be made but no data written
 		* @return The created buffer
 		*/
-		cl::Buffer Buffer(MEM mem, size_t dataSize, void *data = nullptr);
+		cl::Buffer buffer(MEM mem, size_t dataSize, void *data = nullptr);
 		/*
 		* Create a cl::BufferGL and pass some data to it if desired
 		* @param mem The type of memory the buffer is (read, write, read&write)
 		* @param vbo The vbo to use as the data
 		* @return The created buffer
 		*/
-		cl::BufferGL BufferGL(MEM mem, GL::VertexBuffer &vbo);
+		cl::BufferGL bufferGL(MEM mem, GL::VertexBuffer &vbo);
 		/*
 		* Create a cl::Image2D and pass some data to it if desired, use of the default 
 		* parameters specifies that no write is desired, note that all default params must
@@ -60,7 +60,7 @@ namespace CL {
 		*       the image2d is created but no data written
 		* @return The created Image2D
 		*/
-		cl::Image2D Image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin = cl::size_t<3>(),
+		cl::Image2D image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin = cl::size_t<3>(),
 			cl::size_t<3> region = cl::size_t<3>(), void *pixels = nullptr);
 		/*
 		* Create an image from a GL::Texture
@@ -70,9 +70,9 @@ namespace CL {
 		* @return the cl::Image2DGL corresponding to the texture
 		*/
 #ifdef CL_VERSION_1_2
-		cl::ImageGL ImageFromTexture(MEM mem, GL::Texture &tex);
+		cl::ImageGL imageFromTexture(MEM mem, GL::Texture &tex);
 #else
-		cl::Image2DGL ImageFromTexture(MEM mem, GL::Texture &tex);
+		cl::Image2DGL imageFromTexture(MEM mem, GL::Texture &tex);
 #endif
 		/*
 		* Write some data to a buffer
@@ -80,7 +80,7 @@ namespace CL {
 		* @param dataSize Size of data to write
 		* @param data The data to write
 		*/
-		void WriteData(const cl::Buffer &b, size_t dataSize, void *data);
+		void writeData(const cl::Buffer &b, size_t dataSize, void *data);
 		/*
 		* Write some data to an Image2d
 		* @param img The image2d to write too
@@ -88,7 +88,7 @@ namespace CL {
 		* @param region The size of region to read data from
 		* @param pixels The data to read
 		*/
-		void WriteData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels);
+		void writeData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels);
 		/*
 		* Read the data from some buffer into the block of memory pointed to by data
 		* @param buf The device buffer to read from
@@ -96,7 +96,7 @@ namespace CL {
 		* @param data Where to put the data
 		* @param offset Offset in the buffer to start reading from
 		*/
-		void ReadData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset = 0);
+		void readData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset = 0);
 		/*
 		* Read the image data from some kernel image argument into data
 		* @param img The device image data to read from
@@ -104,20 +104,20 @@ namespace CL {
 		* @param region The size of the region to read (or is it the coord to read too?)
 		* @param pixels The location to read the data too
 		*/
-		void ReadData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels);
+		void readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels);
 		/*
 		* Run the kernel
 		* @param local The local dimensions
 		* @param numGroups The global dimensions
 		* @param offset The initial offset for each id dimension, default is NullRange, ie no offset
 		*/
-		void RunKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset = cl::NullRange);
+		void runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset = cl::NullRange);
 		/*
 		* Get the preferred work group size for some kernel on the device
 		* @param kernel The kernel to get preferred size of
 		* @return Preferred work group size
 		*/
-		int PreferredWorkSize(const cl::Kernel &kernel);
+		int preferredWorkSize(const cl::Kernel &kernel);
 		/*
 		* Get the max work group size for a kernel on the device
 		* @param kernel Kernel to get max work group size of
@@ -130,13 +130,13 @@ namespace CL {
 		* Select the device to be used and setup the context and command queue
 		* @param dev Device type to look for
 		*/
-		void SelectDevice(DEVICE dev);
+		void selectDevice(DEVICE dev);
 		/**
 		* Selecte the device to be used and setup the context and cmd queue for 
 		* an OpenGL interop context
 		* @param dev Device type to get
 		*/
-		void SelectInteropDevice(DEVICE dev);
+		void selectInteropDevice(DEVICE dev);
 
 	public:
 		std::vector<cl::Platform> mPlatforms;

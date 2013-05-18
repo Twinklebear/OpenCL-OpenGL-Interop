@@ -22,11 +22,11 @@
 
 CL::TinyCL::TinyCL(DEVICE dev, bool interop){
 	if (interop)
-		SelectInteropDevice(dev);
+		selectInteropDevice(dev);
 	else
-		SelectDevice(dev);
+		selectDevice(dev);
 }
-cl::Program CL::TinyCL::LoadProgram(std::string file){
+cl::Program CL::TinyCL::loadProgram(std::string file){
 	cl::Program program;
 	try {
 		std::string content = Util::readFile(file);
@@ -46,7 +46,7 @@ cl::Program CL::TinyCL::LoadProgram(std::string file){
 	}
 	throw std::runtime_error("Failed to load program");
 }
-cl::Kernel CL::TinyCL::LoadKernel(const cl::Program &prog, std::string kernel){
+cl::Kernel CL::TinyCL::loadKernel(const cl::Program &prog, std::string kernel){
 	try {
 		return cl::Kernel(prog, kernel.c_str());
 	}
@@ -56,7 +56,7 @@ cl::Kernel CL::TinyCL::LoadKernel(const cl::Program &prog, std::string kernel){
 	}
 	throw std::runtime_error("Failed to load kernel");
 }
-cl::Buffer CL::TinyCL::Buffer(MEM mem, size_t dataSize, void *data){
+cl::Buffer CL::TinyCL::buffer(MEM mem, size_t dataSize, void *data){
 	try {
 		cl::Buffer buf(mContext, mem, dataSize);
 		if (data != nullptr)
@@ -69,10 +69,10 @@ cl::Buffer CL::TinyCL::Buffer(MEM mem, size_t dataSize, void *data){
 		throw e;
 	}
 }
-cl::BufferGL CL::TinyCL::BufferGL(MEM mem, GL::VertexBuffer &vbo){
+cl::BufferGL CL::TinyCL::bufferGL(MEM mem, GL::VertexBuffer &vbo){
 	return cl::BufferGL(mContext, mem, vbo);
 }
-cl::Image2D CL::TinyCL::Image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin,
+cl::Image2D CL::TinyCL::image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin,
 	cl::size_t<3> region, void *pixels)
 {
 	try {
@@ -92,22 +92,21 @@ cl::Image2D CL::TinyCL::Image2d(MEM mem, cl::ImageFormat format, int w, int h, c
 	}
 }
 #ifdef CL_VERSION_1_2
-cl::ImageGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
+cl::ImageGL CL::TinyCL::imageFromTexture(MEM mem, GL::Texture &tex){
 	return cl::ImageGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
 }
 #else
-cl::Image2DGL CL::TinyCL::ImageFromTexture(MEM mem, GL::Texture &tex){
+cl::Image2DGL CL::TinyCL::imageFromTexture(MEM mem, GL::Texture &tex){
 	return cl::Image2DGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
 }
 #endif
-void CL::TinyCL::WriteData(const cl::Buffer &b, size_t dataSize, void *data){
+void CL::TinyCL::writeData(const cl::Buffer &b, size_t dataSize, void *data){
 	mQueue.enqueueWriteBuffer(b, CL_TRUE, 0, dataSize, data);
 }
-void CL::TinyCL::WriteData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
-	//Is 0, 0 right for row/slice pitch?
+void CL::TinyCL::writeData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
 	mQueue.enqueueWriteImage(img, CL_TRUE, origin, region, 0, 0, pixels);
 }
-void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset){
+void CL::TinyCL::readData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset){
 	try {
 		mQueue.enqueueReadBuffer(buf, CL_TRUE, offset, dataSize, data);
 		mQueue.finish();
@@ -117,7 +116,7 @@ void CL::TinyCL::ReadData(const cl::Buffer &buf, size_t dataSize, void *data, si
 			<< " code: " << e.err() << std::endl;
 	}
 }
-void CL::TinyCL::ReadData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
+void CL::TinyCL::readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
 	try {
 		mQueue.enqueueReadImage(img, CL_TRUE, origin, region, 0, 0, pixels);
 		mQueue.finish();
@@ -127,7 +126,7 @@ void CL::TinyCL::ReadData(const cl::Image &img, cl::size_t<3> origin, cl::size_t
 			<< " code: " << e.err() << std::endl;
 	}
 }
-void CL::TinyCL::RunKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset){
+void CL::TinyCL::runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset){
 	try {
 		mQueue.enqueueNDRangeKernel(kernel, offset, global, local);
 		mQueue.finish();
@@ -137,7 +136,7 @@ void CL::TinyCL::RunKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRa
 			<< " code: " << e.err() << std::endl;
 	}
 }
-void CL::TinyCL::SelectDevice(DEVICE dev){
+void CL::TinyCL::selectDevice(DEVICE dev){
 	try {
 		//We assume only the first device and platform will be used
 		//This is after all a lazy implementation
@@ -160,7 +159,7 @@ void CL::TinyCL::SelectDevice(DEVICE dev){
 		throw e;
 	}
 }
-void CL::TinyCL::SelectInteropDevice(DEVICE dev){
+void CL::TinyCL::selectInteropDevice(DEVICE dev){
 	try {
 		//We assume only the first device and platform will be used
 		//This is after all a lazy implementation
@@ -210,7 +209,7 @@ void CL::TinyCL::SelectInteropDevice(DEVICE dev){
 	}
 
 }
-int CL::TinyCL::PreferredWorkSize(const cl::Kernel &kernel){
+int CL::TinyCL::preferredWorkSize(const cl::Kernel &kernel){
 	return kernel.getWorkGroupInfo<CL_KERNEL_PREFERRED_WORK_GROUP_SIZE_MULTIPLE>(mDevices.at(0));
 }
 int CL::TinyCL::maxWorkGroupSize(const cl::Kernel &kernel){

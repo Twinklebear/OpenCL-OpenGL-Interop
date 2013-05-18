@@ -73,20 +73,20 @@ void liveAdvectTexture(){
 
 	//Setup our OpenCL context + program and kernel
 	CL::TinyCL tiny(CL::DEVICE::GPU, true);
-	cl::Program program = tiny.LoadProgram("../res/simpleAdvect.cl");
-	cl::Kernel kernel = tiny.LoadKernel(program, "simpleAdvect");
+	cl::Program program = tiny.loadProgram("../res/simpleAdvect.cl");
+	cl::Kernel kernel = tiny.loadKernel(program, "simpleAdvect");
 
 	//Setup our OpenCL data
 #ifdef CL_VERSION_1_2
-	cl::ImageGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
-	cl::ImageGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
+	cl::ImageGL imgA = tiny.imageFromTexture(CL::MEM::READ_WRITE, texA);
+	cl::ImageGL imgB = tiny.imageFromTexture(CL::MEM::READ_WRITE, texB);
 #else
-	cl::Image2DGL imgA = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texA);
-	cl::Image2DGL imgB = tiny.ImageFromTexture(CL::MEM::READ_WRITE, texB);
+	cl::Image2DGL imgA = tiny.imageFromTexture(CL::MEM::READ_WRITE, texA);
+	cl::Image2DGL imgB = tiny.imageFromTexture(CL::MEM::READ_WRITE, texB);
 #endif
 	const float speed = 0.2f;
 	float velocity[2] = { 0.0f, 0.0f };
-	cl::Buffer velBuf = tiny.Buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
+	cl::Buffer velBuf = tiny.buffer(CL::MEM::READ_ONLY, 2 * sizeof(float), velocity);
 
 	//Setup our GL objects vector
 	std::vector<cl::Memory> glObjs;
@@ -99,7 +99,7 @@ void liveAdvectTexture(){
 	kernel.setArg(1, velBuf);
 	
 	//Query the preferred work group size
-	int workSize = tiny.PreferredWorkSize(kernel);
+	int workSize = tiny.preferredWorkSize(kernel);
 	//fixed for now
 	int imgSize = 256;
 	cl::NDRange local(workSize, workSize);
@@ -126,24 +126,24 @@ void liveAdvectTexture(){
 					//So we can change velocity
 					case SDLK_w:
 						velocity[1] = speed;
-						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						tiny.writeData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_s:
 						velocity[1] = -speed;
-						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						tiny.writeData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_a:
 						velocity[0] = -speed;
-						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						tiny.writeData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_d:
 						velocity[0] = speed;
-						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						tiny.writeData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					case SDLK_r:
 						velocity[0] = 0.0f;
 						velocity[1] = 0.0f;
-						tiny.WriteData(velBuf, 2 * sizeof(float), velocity);
+						tiny.writeData(velBuf, 2 * sizeof(float), velocity);
 						break;
 					//Toggle pause
 					case SDLK_SPACE:
@@ -178,7 +178,7 @@ void liveAdvectTexture(){
 				glFinish();
 				tiny.mQueue.enqueueAcquireGLObjects(&glObjs);
 
-				tiny.RunKernel(kernel, local, global);
+				tiny.runKernel(kernel, local, global);
 			
 				tiny.mQueue.enqueueReleaseGLObjects(&glObjs);
 				tiny.mQueue.finish();
@@ -207,8 +207,8 @@ void liveAdvectTexture(){
 }
 void bigDot(){
 	CL::TinyCL tiny(CL::DEVICE::GPU);
-	cl::Program prog = tiny.LoadProgram("../res/bigDot.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "bigDot");
+	cl::Program prog = tiny.loadProgram("../res/bigDot.cl");
+	cl::Kernel kernel = tiny.loadKernel(prog, "bigDot");
 
 	//Setup the input data
 	const int nElem = 4;
@@ -227,10 +227,10 @@ void bigDot(){
 		std::cout << vecB[i] << ", ";
 
 	//Setup cl buffers
-	cl::Buffer bufVecA = tiny.Buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecA);
-	cl::Buffer bufVecB = tiny.Buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecB);
+	cl::Buffer bufVecA = tiny.buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecA);
+	cl::Buffer bufVecB = tiny.buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecB);
 	//Our out buffer is (nElem / 4) because we process in chunks of 4
-	cl::Buffer bOut = tiny.Buffer(CL::MEM::WRITE_ONLY, (nElem / 4) * sizeof(float));
+	cl::Buffer bOut = tiny.buffer(CL::MEM::WRITE_ONLY, (nElem / 4) * sizeof(float));
 
 	kernel.setArg(0, bufVecA);
 	kernel.setArg(1, bufVecB);
@@ -239,11 +239,11 @@ void bigDot(){
 
 	//We pass nullrange to the local argument to let OpenCL decide how to split things up
 	cl::NDRange global(nElem / 4);
-	tiny.RunKernel(kernel, cl::NullRange, global);
+	tiny.runKernel(kernel, cl::NullRange, global);
 
 	//Read results
 	float result[nElem / 4] = {0};
-	tiny.ReadData(bOut, (nElem / 4) * sizeof(float), result);
+	tiny.readData(bOut, (nElem / 4) * sizeof(float), result);
 	tiny.mQueue.finish();
 
 	//Sum to get final result
@@ -337,41 +337,41 @@ void openglCompute(){
 	glDeleteProgram(program);
 }
 cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny){
-	cl::Program prog = tiny.LoadProgram("../res/householder.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "householder");
+	cl::Program prog = tiny.loadProgram("../res/householder.cl");
+	cl::Kernel kernel = tiny.loadKernel(prog, "householder");
 
-	cl::Buffer res = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * 16);
+	cl::Buffer res = tiny.buffer(CL::MEM::WRITE_ONLY, sizeof(float) * 16);
 
 	kernel.setArg(0, sizeof(float) * 4, &vect[0]);
 	kernel.setArg(1, res);
 
-	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(1));
+	tiny.runKernel(kernel, cl::NullRange, cl::NDRange(1));
 	return res;
 }
 std::array<float, 16> householder(std::array<float, 4> vect, CL::TinyCL &tiny){
 	cl::Buffer res = householderBuf(vect, tiny);
 	std::array<float, 16> mat;
-	tiny.ReadData(res, sizeof(float) * 16, &mat[0]);
+	tiny.readData(res, sizeof(float) * 16, &mat[0]);
 	return mat;
 }
 cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny){
-	cl::Program prog = tiny.LoadProgram("../res/matvecmult.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "matVecMult");
+	cl::Program prog = tiny.loadProgram("../res/matvecmult.cl");
+	cl::Kernel kernel = tiny.loadKernel(prog, "matVecMult");
 
 	cl::Buffer hMat = householderBuf(u, tiny);
-	cl::Buffer res = tiny.Buffer(CL::MEM::WRITE_ONLY, sizeof(float) * 4);
+	cl::Buffer res = tiny.buffer(CL::MEM::WRITE_ONLY, sizeof(float) * 4);
 
 	kernel.setArg(0, hMat);
 	kernel.setArg(1, sizeof(float) * 4, &v[0]);
 	kernel.setArg(2, res);
 
-	tiny.RunKernel(kernel, cl::NullRange, cl::NDRange(1));
+	tiny.runKernel(kernel, cl::NullRange, cl::NDRange(1));
 	return res;
 }
 std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny){
 	cl::Buffer res = reflectBuf(v, u, tiny);
 	std::array<float, 4> vect;
-	tiny.ReadData(res, sizeof(float) * 4, &vect[0]);
+	tiny.readData(res, sizeof(float) * 4, &vect[0]);
 	return vect;
 }
 std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny){
@@ -379,8 +379,8 @@ std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> 
 		std::cout << "b vector does not match A dim" << std::endl;
 		return std::vector<float>();
 	}
-	cl::Program prog = tiny.LoadProgram("../res/conjGrad.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "conjGrad");
+	cl::Program prog = tiny.loadProgram("../res/conjGrad.cl");
+	cl::Kernel kernel = tiny.loadKernel(prog, "conjGrad");
 
 	std::cout << "conj grad max work group size: " << tiny.maxWorkGroupSize(kernel) << std::endl;
 	
@@ -392,11 +392,11 @@ std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> 
 	matrix.getRaw(rows, cols, vals);
 
 	//Setup cl buffers
-	cl::Buffer rowBuf = tiny.Buffer(CL::MEM::READ_ONLY, nElems * sizeof(int), rows);
-	cl::Buffer colBuf = tiny.Buffer(CL::MEM::READ_ONLY, nElems * sizeof(int), cols);
-	cl::Buffer valBuf = tiny.Buffer(CL::MEM::READ_ONLY, nElems * sizeof(float), vals);
-	cl::Buffer bBuf = tiny.Buffer(CL::MEM::READ_ONLY, bVec.size() * sizeof(float), &bVec[0]);
-	cl::Buffer resBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, (2 + dim) * sizeof(float));
+	cl::Buffer rowBuf = tiny.buffer(CL::MEM::READ_ONLY, nElems * sizeof(int), rows);
+	cl::Buffer colBuf = tiny.buffer(CL::MEM::READ_ONLY, nElems * sizeof(int), cols);
+	cl::Buffer valBuf = tiny.buffer(CL::MEM::READ_ONLY, nElems * sizeof(float), vals);
+	cl::Buffer bBuf = tiny.buffer(CL::MEM::READ_ONLY, bVec.size() * sizeof(float), &bVec[0]);
+	cl::Buffer resBuf = tiny.buffer(CL::MEM::WRITE_ONLY, (2 + dim) * sizeof(float));
 
 	kernel.setArg(0, sizeof(dim), &dim);
 	kernel.setArg(1, sizeof(nElems), &nElems);
@@ -410,17 +410,17 @@ std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> 
 	kernel.setArg(9, bBuf);
 	kernel.setArg(10, resBuf);
 
-	tiny.RunKernel(kernel, dim, dim);
+	tiny.runKernel(kernel, dim, dim);
 
 	//Read results
 	float info[2];
-	tiny.ReadData(resBuf, 2 * sizeof(float), info);
+	tiny.readData(resBuf, 2 * sizeof(float), info);
 	std::cout << "After: " << info[0] << " iterations, the residual length is: " << info[1] << std::endl;
 
 	//Read the solved x vector
 	std::vector<float> x;
 	x.reserve(dim);
-	tiny.ReadData(resBuf, dim * sizeof(float), &x[0], 2 * sizeof(float));
+	tiny.readData(resBuf, dim * sizeof(float), &x[0], 2 * sizeof(float));
 
 	delete[] rows;
 	delete[] cols;
