@@ -84,6 +84,9 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 				Element elem;
 				std::stringstream ss(line);
 				ss >> elem.row >> elem.col >> elem.val;
+				//Matrix Market is 1-indexed, so subtract 1
+				elem.row--;
+				elem.col--;
 				elements.push_back(elem);
 				//If the row is symmetric we'll only be given the diagonal and lower-triangular implying that
 				//if we're given an off-diagonal: i j v then a corresponding element: j i v should also be inserted
