@@ -45,6 +45,7 @@ private:
 public:
 	std::vector<Element> elements;
 	bool symmetric;
+	int dim;
 };
 
 #endif

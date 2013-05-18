@@ -17,6 +17,7 @@
 #include <glvertexarray.h>
 #include <timer.h>
 #include "tinycl.h"
+#include "sparsematrix.h"
 #include "demos.h"
 
 const std::array<glm::vec3, 8> quad = {
@@ -372,4 +373,55 @@ std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL:
 	std::array<float, 4> vect;
 	tiny.ReadData(res, sizeof(float) * 4, &vect[0]);
 	return vect;
+}
+void conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny){
+	if (bVec.size() != matrix.dim){
+		std::cout << "b vector does not match A dim" << std::endl;
+		return;
+	}
+	cl::Program prog = tiny.LoadProgram("../res/conjGrad.cl");
+	cl::Kernel kernel = tiny.LoadKernel(prog, "conjGrad");
+	
+	//Get the raw data from the matrix
+	int dim = matrix.dim, nElems = matrix.elements.size();
+	int *rows = new int[nElems];
+	int *cols = new int[nElems];
+	float *vals = new float[nElems];
+	matrix.getRaw(rows, cols, vals);
+
+	//Setup cl buffers
+	cl::Buffer rowBuf = tiny.Buffer(CL::MEM::READ_ONLY, nElems * sizeof(int), rows);
+	cl::Buffer colBuf = tiny.Buffer(CL::MEM::READ_ONLY, nElems * sizeof(int), cols);
+	cl::Buffer valBuf = tiny.Buffer(CL::MEM::READ_ONLY, nElems * sizeof(float), vals);
+	cl::Buffer bBuf = tiny.Buffer(CL::MEM::READ_ONLY, bVec.size() * sizeof(float), &bVec[0]);
+	cl::Buffer resBuf = tiny.Buffer(CL::MEM::WRITE_ONLY, (2 + dim) * sizeof(float));
+
+	
+	kernel.setArg(0, sizeof(dim), &dim);
+	kernel.setArg(1, sizeof(nElems), &nElems);
+	kernel.setArg(2, dim * sizeof(float), NULL);
+	kernel.setArg(3, dim * sizeof(float), NULL);
+	kernel.setArg(4, dim * sizeof(float), NULL);
+	kernel.setArg(5, dim * sizeof(float), NULL);
+	kernel.setArg(6, rowBuf);
+	kernel.setArg(7, colBuf);
+	kernel.setArg(8, valBuf);
+	kernel.setArg(9, bBuf);
+	kernel.setArg(10, resBuf);
+
+	tiny.RunKernel(kernel, dim, dim);
+
+	//Read results
+	float *res = new float[2 + dim];
+	tiny.ReadData(resBuf, (2 + dim) * sizeof(float), res);
+	std::cout << "After: " << res[0] << " iterations, the residual length is: " << res[1]
+		<< "\nx vector:\n";
+	for (int i = 2; i < dim + 2; ++i)
+		std::cout << res[i] << "\n";
+	std::cout << std::endl;
+
+	delete[] rows;
+	delete[] cols;
+	delete[] vals;
+	delete[] res;
 }

@@ -47,6 +47,11 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 	}
 
 	std::ifstream matFile(file.c_str());
+	if (!matFile.is_open()){
+		std::cout << "Error: Failed to open Matrix Market file: " << file << std::endl;
+		return;
+	}
+
 	//The first line after end of comments is the M N L information
 	bool readComment;
 	std::string line;
@@ -77,6 +82,7 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 				if (symmetric)
 					l += l - n;
 				std::cout << "nRow nCol nVals: " << m << " " << n << " " << l << std::endl;
+				dim = m;
 				elements.reserve(l);
 			}
 			//Otherwise it's element data in the form: row col value

@@ -1,6 +1,7 @@
 #include <array>
 #include <iostream>
 #include <iomanip>
+#include "sparsematrix.h"
 #include "tinycl.h"
 
 /*
@@ -129,3 +130,7 @@ cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL
 * Reflect a vector v using the Householder matrix of u and get back the result
 */
 std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny);
+/*
+* Solve a linear system Ax = b (where A is sparse) using the Conjugate Gradient method
+*/
+void conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny);
