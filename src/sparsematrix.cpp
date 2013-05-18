@@ -73,9 +73,10 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 				std::stringstream ss(line);
 				int m, n, l;
 				ss >> m >> n >> l;
-				std::cout << "M N L: " << m << " " << n << " " << l << std::endl;
-				//l is the number of entries in the file, so there will be at least that many
-				//elements
+				//Also account for # off diagonal elements
+				if (symmetric)
+					l += l - n;
+				std::cout << "nRow nCol nVals: " << m << " " << n << " " << l << std::endl;
 				elements.reserve(l);
 			}
 			//Otherwise it's element data in the form: row col value
