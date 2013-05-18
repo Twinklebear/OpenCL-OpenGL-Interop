@@ -14,12 +14,12 @@ struct Element {
 	float val;
 
 	//Get a diagonal version of the element, ie. with row and col switched
-	Element diagonal();
+	Element diagonal() const;
 };
-//True if lhs row is lower than rhs
-bool lowerRow(const Element &lhs, const Element &rhs);
-//True if this col is lower than rhs
-bool lowerCol(const Element &lhs, const Element &rhs);
+//Sort elements in row major order, true if lhs is lower than rhs in this sorting
+bool rowMajor(const Element &lhs, const Element &rhs);
+//Sort elements in col major order, true if lhs is lower than rhs in this sorting
+bool colMajor(const Element &lhs, const Element &rhs);
 
 /**
 * A sparse matrix, can be loaded directly from a matrix market
@@ -34,7 +34,9 @@ public:
 	*/
 	SparseMatrix(const std::string &file, bool rowMaj = true);
 	//Get the underlying row, column and value arrays for use in passing to OpenCL
-	void getRaw(int *row, int *col, float *val);
+	void getRaw(int *row, int *col, float *val) const;
+	//Print the matrix to a string
+	std::string print() const;
 
 private:
 	//Parse and load a matrix from a matrix market file

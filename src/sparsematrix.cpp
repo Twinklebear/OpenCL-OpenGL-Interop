@@ -5,34 +5,41 @@
 #include <iostream>
 #include "sparsematrix.h"
 
-Element Element::diagonal(){
+Element Element::diagonal() const {
 	Element e;
 	e.row = col;
 	e.col = row;
 	e.val = val;
 	return e;
 }
-//True if lhs row is lower than rhs
-bool lowerRow(const Element &lhs, const Element &rhs){
-	return lhs.row < rhs.row;
+bool rowMajor(const Element &lhs, const Element &rhs){
+	return (lhs.row < rhs.row 
+		|| (lhs.row == rhs.row && lhs.col < rhs.col));
 }
-//True if this col is lower than rhs
-bool lowerCol(const Element &lhs, const Element &rhs){
-	return lhs.col < rhs.col;
+bool colMajor(const Element &lhs, const Element &rhs){
+		return (lhs.col < rhs.col
+			|| (lhs.col == rhs.col && lhs.row < rhs.row));
 }
-/**
-* Load the matrix from a matrix market file, rowMaj true if we want to 
-* sort by row ascending, ie. row major, currently only support
-* loading from coordinate real symmetric matrices
-*/
 SparseMatrix::SparseMatrix(const std::string &file, bool rowMaj){
 	loadMatrix(file, rowMaj);
 }
-//Get the underlying row, column and value arrays for use in passing to OpenCL
-void SparseMatrix::getRaw(int *row, int *col, float *val){
-
+void SparseMatrix::getRaw(int *row, int *col, float *val) const {
+	//It's assumed the appropriate amount of space is allocated for each array
+	//ie. that row is a int[elements.size()] array, etc.
+	for (size_t i = 0; i < elements.size(); ++i){
+		row[i] = elements.at(i).row;
+		col[i] = elements.at(i).col;
+		val[i] = elements.at(i).val;
+	}
 }
-//Parse and load a matrix from a matrix market file
+std::string SparseMatrix::print() const {
+	std::stringstream ss;
+	ss << "Matrix elements:\n";
+	for (std::vector<Element>::const_iterator it = elements.begin(); it != elements.end(); ++it)
+		ss << it->row << " " << it->col << " " << it->val << "\n";
+
+	return ss.str();
+}
 void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 	if (file.substr(file.size() - 3, 3) != "mtx"){
 		std::cout << "Error: Not a Matrix Market file: " << file << std::endl;
@@ -64,7 +71,7 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 			//If this is the first line after comments it's the M N L info
 			if (readComment){
 				std::stringstream ss(line);
-				float m, n, l;
+				int m, n, l;
 				ss >> m >> n >> l;
 				std::cout << "M N L: " << m << " " << n << " " << l << std::endl;
 				//l is the number of entries in the file, so there will be at least that many
@@ -88,13 +95,7 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 	//Select the appropriate sorting for the way we want to treat the matrix, row-maj or col-maj
 	//If row major we'll sort by row, if column sort by col, both in ascending order
 	if (rowMaj)
-		std::sort(elements.begin(), elements.end(), lowerRow);
+		std::sort(elements.begin(), elements.end(), rowMajor);
 	else
-		std::sort(elements.begin(), elements.end(), lowerCol);
-
-	std::cout << "Matrix size: " << elements.size() << std::endl;
-	std::cout << "Matrix:" << std::endl;
-	for (std::vector<Element>::const_iterator it = elements.begin(); it != elements.end(); ++it)
-		std::cout << it->row << " " << it->col << " " << it->val << "\n";
-	std::cout << std::endl;
+		std::sort(elements.begin(), elements.end(), colMajor);
 }
