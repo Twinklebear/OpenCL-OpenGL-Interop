@@ -1,4 +1,4 @@
-//Solve a sparse matrix system using conjugate gradient method
+//Solve a symmetric sparse matrix system using conjugate gradient method
 __kernel void conjGrad(int dim, int nVals, __local float *r, __local float *x,
 	__local float *Atimesp, __local float *p, __global int *rows, __global int *cols,
 	__global float *A, __global float *b, __global float *result)
