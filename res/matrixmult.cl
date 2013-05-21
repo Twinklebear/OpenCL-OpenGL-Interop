@@ -1,6 +1,8 @@
 //This kernel will multiply two matrices of size 4nx4n. It's required that matrix b
 //has been transposed
-__kernel void matrixMult(__global float4 *a, __global float4 *b, __global float *c){
+__kernel void matrixMult(__constant float4 *a, __constant float4 *b, 
+	__global float *c)
+{
 	int nRows = get_global_size(0);
 	int vectorsPerRow = nRows / 4;
 	int start = get_global_id(0) * vectorsPerRow;

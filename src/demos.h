@@ -83,8 +83,8 @@ std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
 */
 template<size_t N>
 cl::Buffer matrixMultBuf(std::array<float, N> &a, std::array<float, N> &b, CL::TinyCL &tiny){
-	cl::Program prog = tiny.LoadProgram("../res/matrixmult.cl");
-	cl::Kernel kernel = tiny.LoadKernel(prog, "matrixMult");
+	cl::Program prog = tiny.loadProgram("../res/matrixmult.cl");
+	cl::Kernel kernel = tiny.loadKernel(prog, "matrixMult");
 
 	size_t nRows = static_cast<size_t>(std::sqrt(N));
 	//Setup a, b, c matrix buffers
@@ -110,6 +110,30 @@ std::array<float, N> matrixMult(std::array<float, N> &a, std::array<float, N> &b
 	//Read and return
 	std::array<float, N> res;
 	tiny.readData(bufMat, sizeof(float) * N, &res[0]);
+	return res;
+}
+/*
+* Multiply a matrix a by a vector b and get back the result, c
+* Ab = c
+* computation is done in the TinyCL context passed
+*/
+template<size_t N>
+std::array<float, N> matrixVecMult(std::array<float, N * N> &a, std::array<float, N> &b, CL::TinyCL &tiny){
+	cl::Program program = tiny.loadProgram("../res/matvecmult.cl");
+	cl::Kernel kernel = tiny.loadKernel(program, "matVecMult");
+
+	cl::Buffer matBuf = tiny.buffer(CL::MEM::READ_ONLY, N * N * sizeof(float), &a[0]);
+	cl::Buffer vecBuf = tiny.buffer(CL::MEM::READ_ONLY, N * sizeof(float), &b[0]);
+	cl::Buffer resBuf = tiny.buffer(CL::MEM::READ_ONLY, N * sizeof(float));
+
+	kernel.setArg(0, matBuf);
+	kernel.setArg(1, vecBuf);
+	kernel.setArg(2, resBuf);
+
+	tiny.runKernel(kernel, cl::NullRange, cl::NDRange(N));
+
+	std::array<float, N> res;
+	tiny.readData(resBuf, N * sizeof(float), &res[0]);
 	return res;
 }
 /*
