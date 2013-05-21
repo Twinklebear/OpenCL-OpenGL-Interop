@@ -22,8 +22,8 @@
 *	along with the solution itself
 */
 __kernel void conjGrad(int dim, int nVals, __local float *r, __local float *x,
-	__local float *Atimesp, __local float *p, __global int *rows, __global int *cols,
-	__global float *A, __global float *b, __global float *result)
+	__local float *Atimesp, __local float *p, __constant int *rows, __constant int *cols,
+	__constant float *A, __constant float *b, __global float *result)
 {
 	//Todo: the book uses local id, and runs everything as one work group
 	//which is ok, but what if the matrix is bigger dimensions than max work group size?
