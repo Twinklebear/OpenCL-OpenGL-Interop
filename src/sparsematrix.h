@@ -13,6 +13,9 @@ struct Element {
 	int row, col;
 	float val;
 
+	Element();
+	//Create an element
+	Element(int row, int col, int val);
 	//Get a diagonal version of the element, ie. with row and col switched
 	Element diagonal() const;
 };
@@ -33,6 +36,11 @@ public:
 	* loading from coordinate real symmetric matrices
 	*/
 	SparseMatrix(const std::string &file, bool rowMaj = true);
+	/**
+	* Load the matrix from data contained within the row, col, and val arrays
+	* to setup a matrix of dim dimensions in the major order desired
+	*/
+	SparseMatrix(const int *row, const int *col, const float *vals, int dim, bool rowMaj = true);
 	//Get the underlying row, column and value arrays for use in passing to OpenCL
 	void getRaw(int *row, int *col, float *val) const;
 	//Print the matrix to a string

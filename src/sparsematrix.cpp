@@ -5,6 +5,11 @@
 #include <iostream>
 #include "sparsematrix.h"
 
+Element::Element() : row(-1), col(-1), val(-1)
+{}
+Element::Element(int row, int col, int val)
+	: row(row), col(col), val(val)
+{}
 Element Element::diagonal() const {
 	Element e;
 	e.row = col;
@@ -22,6 +27,18 @@ bool colMajor(const Element &lhs, const Element &rhs){
 }
 SparseMatrix::SparseMatrix(const std::string &file, bool rowMaj){
 	loadMatrix(file, rowMaj);
+}
+SparseMatrix::SparseMatrix(const int *row, const int *col, const float *vals, int dim, bool rowMaj)
+	: dim(dim)
+{
+	for (int i = 0; i < dim; ++i)
+		elements.push_back(Element(row[i], col[i], vals[i]));
+	//Select the appropriate sorting for the way we want to treat the matrix, row-maj or col-maj
+	//If row major we'll sort by row, if column sort by col, both in ascending order
+	if (rowMaj)
+		std::sort(elements.begin(), elements.end(), rowMajor);
+	else
+		std::sort(elements.begin(), elements.end(), colMajor);
 }
 void SparseMatrix::getRaw(int *row, int *col, float *val) const {
 	//It's assumed the appropriate amount of space is allocated for each array
