@@ -6,13 +6,14 @@
 int main(int argc, char** argv){
 	CL::TinyCL tiny(CL::DEVICE::GPU);
 	
-	std::array<float, 8 * 8> mat;
+	const size_t nRow = 4;
+	std::array<float, nRow * nRow> mat;
 	for (int i = 0; i < mat.size(); ++i)
 		mat[i] = i;
 	std::cout << "Matrix:";
 	logMatrix(mat);
 
-	std::array<float, 8> vec;
+	std::array<float, nRow> vec;
 	for (int i = 0; i < vec.size(); ++i)
 		vec[i] = i;
 

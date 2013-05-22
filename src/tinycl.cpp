@@ -138,11 +138,22 @@ void CL::TinyCL::runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRa
 }
 void CL::TinyCL::selectDevice(DEVICE dev){
 	try {
-		//We assume only the first device and platform will be used
-		//This is after all a lazy implementation
 		cl::Platform::get(&mPlatforms);
-		//Query the devices for the type desired
-		mPlatforms.at(0).getDevices(dev, &mDevices);
+		//Find the first platform that is the device type we want
+		for (int i = 0; mDevices.empty(); ++i){
+			try {
+				mPlatforms.at(i).getDevices(dev, &mDevices);
+			}
+			catch (const cl::Error &e){
+				//If the device we want isn't in this platform, keep digging
+				if (e.err() == CL_DEVICE_NOT_FOUND)
+					continue;
+				else 
+					throw e;
+			}
+		}
+		//Still being kind of lazy and assuming that only one device is on each platform,
+		//or at least that the first device is the best
 		std::cout << "Device info--\n" << "Name: " << mDevices.at(0).getInfo<CL_DEVICE_NAME>()
 			<< "\nVendor: " << mDevices.at(0).getInfo<CL_DEVICE_VENDOR>() 
 			<< "\nDriver Version: " << mDevices.at(0).getInfo<CL_DRIVER_VERSION>() 
