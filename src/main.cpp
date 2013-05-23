@@ -29,10 +29,15 @@ int main(int argc, char** argv){
 		std::cout << i << " ";
 	std::cout << std::endl;
 
-	int rows[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-	int cols[8] = { 0, 1, 2, 3, 4, 5, 6, 7 };
-	float vals[8] = { 1, 1, 1, 1, 1, 1, 1, 1 };
-	SparseMatrix sMat(rows, cols, vals, 8);
+	std::array<float, 4 * 3> vec2;
+	std::cout << "Vector being dotted with self: ";
+	for (int i = 0; i < vec2.size(); ++i){
+		vec2[i] = i;
+		std::cout << i << ", ";
+	}
+	std::cout << std::endl;
+
+	std::cout << "Result: " << dot(vec2, vec2, tiny) << std::endl;
 
 	return 0;
 }

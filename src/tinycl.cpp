@@ -129,7 +129,6 @@ void CL::TinyCL::readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t
 void CL::TinyCL::runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset){
 	try {
 		mQueue.enqueueNDRangeKernel(kernel, offset, global, local);
-		mQueue.finish();
 	}
 	catch (const cl::Error &e){
 		std::cout << "Error running nd range kernel: " << e.what()

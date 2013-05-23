@@ -14,11 +14,6 @@
 * the texture as it moves in real time
 */
 void liveAdvectTexture();
-/*
-* Perform a dot product between arbitrary sized vectors
-* This is not an interop program, just a standard math operation
-*/
-void bigDot();
 //Perform a basic computation using an OpenGL Compute shader instead of OpenCL
 void openglCompute();
 //Log a matrix to console
@@ -31,6 +26,37 @@ void logMatrix(const std::array<float, N> &mat){
 		std::cout << std::setw(8) << mat[i] << " ";
 	}
 	std::cout << "\n";
+}
+/*
+* Perform a large dot product between 2n size vectors in the provided
+* OpenCL context, then sum the results of the dot on the host
+* I'd like to write a reduction kernel that will sum the values up later
+* to make things faster, but it's a bit tricky
+*/
+template<size_t N>
+float dot(std::array<float, N> &a, std::array<float, N> &b, CL::TinyCL &tiny){
+	cl::Program program = tiny.loadProgram("../res/bigdot.cl");
+	cl::Kernel dotKernel = tiny.loadKernel(program, "bigDot");
+
+	cl::Buffer aBuf = tiny.buffer(CL::MEM::READ_ONLY, N * sizeof(float), &a[0]);
+	cl::Buffer bBuf = tiny.buffer(CL::MEM::READ_ONLY, N * sizeof(float), &b[0]);
+	cl::Buffer resBuf = tiny.buffer(CL::MEM::READ_WRITE, (N / 4) * sizeof(float));
+	
+	dotKernel.setArg(0, aBuf);
+	dotKernel.setArg(1, bBuf);
+	dotKernel.setArg(2, resBuf);
+
+	tiny.runKernel(dotKernel, cl::NullRange, cl::NDRange(N / 4));
+
+	float *vals = new float[N / 4];
+	tiny.readData(resBuf, (N / 4) * sizeof(float), vals);
+	
+	float sum = 0.0f;
+	for (int i = 0; i < N / 4; ++i)
+		sum += vals[i];
+
+	delete[] vals;
+	return sum;
 }
 /*
 * Transpose the passed in matrix using the tinycl context and return the

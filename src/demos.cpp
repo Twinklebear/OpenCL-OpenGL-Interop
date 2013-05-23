@@ -205,53 +205,6 @@ void liveAdvectTexture(){
 	}
 	Window::Quit();
 }
-void bigDot(){
-	CL::TinyCL tiny(CL::DEVICE::GPU);
-	cl::Program prog = tiny.loadProgram("../res/bigDot.cl");
-	cl::Kernel kernel = tiny.loadKernel(prog, "bigDot");
-
-	//Setup the input data
-	const int nElem = 4;
-	float vecA[nElem] = {0};
-	float vecB[nElem] = {0};
-	for (int i = 0; i < nElem; ++i){
-		vecA[i] = (float)i;
-		vecB[i] = (float)(nElem - i);
-	}
-	//Print the vectors
-	std::cout << "vect a: ";
-	for (int i = 0; i < nElem; ++i)
-		std::cout << vecA[i] << ", ";
-	std::cout << "\nvect b: ";
-	for (int i = 0; i < nElem; ++i)
-		std::cout << vecB[i] << ", ";
-
-	//Setup cl buffers
-	cl::Buffer bufVecA = tiny.buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecA);
-	cl::Buffer bufVecB = tiny.buffer(CL::MEM::READ_ONLY, nElem * sizeof(float), vecB);
-	//Our out buffer is (nElem / 4) because we process in chunks of 4
-	cl::Buffer bOut = tiny.buffer(CL::MEM::WRITE_ONLY, (nElem / 4) * sizeof(float));
-
-	kernel.setArg(0, bufVecA);
-	kernel.setArg(1, bufVecB);
-	kernel.setArg(2, bOut);
-	kernel.setArg(3, sizeof(int), (void*)&nElem);
-
-	//We pass nullrange to the local argument to let OpenCL decide how to split things up
-	cl::NDRange global(nElem / 4);
-	tiny.runKernel(kernel, cl::NullRange, global);
-
-	//Read results
-	float result[nElem / 4] = {0};
-	tiny.readData(bOut, (nElem / 4) * sizeof(float), result);
-	tiny.mQueue.finish();
-
-	//Sum to get final result
-	float sum = 0.0f;
-	for (int i = 0; i < nElem / 4; ++i)
-		sum += result[i];
-	std::cout << "\nDot result: " << sum << std::endl;
-}
 void openglCompute(){
 	//Note: Compute shaders are only OpenGL 4.3+ so my laptop can't run this, since
 	//it's on 4.0
