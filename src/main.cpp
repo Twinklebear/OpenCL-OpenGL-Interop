@@ -39,5 +39,31 @@ int main(int argc, char** argv){
 
 	std::cout << "Result: " << dot(vec2, vec2, tiny) << std::endl;
 
+	//Try out the sparse matrix mult kernel
+	int row[10], col[10];
+	float vals[10];
+	std::vector<float> vecS;
+	for (int i = 0; i < 10; ++i){
+		row[i] = i;
+		col[i] = i;
+		vals[i] = 2;
+		vecS.push_back(i);
+	}
+	std::cout << "Initial vector: ";
+	for (auto i : vecS)
+		std::cout << i << ", ";
+	std::cout << std::endl;
+
+	SparseMatrix simple(row, col, vals, 10);
+	std::cout << "SparseMat:\n" << simple << std::endl;
+
+	vecS = sparseVecMult(simple, vecS, tiny);
+
+	std::cout << "Result: ";
+	for (auto i : vecS)
+		std::cout << i << ", ";
+	std::cout << std::endl;
+
+
 	return 0;
 }

@@ -187,3 +187,7 @@ std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL:
 * the vector 
 */
 std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny);
+/*
+* Multiply a sparse matrix by a vector: Av = c and get back the result vector, c
+*/
+std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> vec, CL::TinyCL &tiny);

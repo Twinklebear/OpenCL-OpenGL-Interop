@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <ostream>
 
 /**
 * Defines an entry in the sparse matrix, containing
@@ -55,5 +56,8 @@ public:
 	bool symmetric;
 	int dim;
 };
+
+//Print the sparse matrix
+std::ostream& operator<<(std::ostream &os, const SparseMatrix &mat);
 
 #endif

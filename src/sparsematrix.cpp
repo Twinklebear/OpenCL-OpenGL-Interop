@@ -3,6 +3,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include "sparsematrix.h"
 
 Element::Element() : row(-1), col(-1), val(-1)
@@ -124,4 +125,9 @@ void SparseMatrix::loadMatrix(const std::string &file, bool rowMaj){
 		std::sort(elements.begin(), elements.end(), rowMajor);
 	else
 		std::sort(elements.begin(), elements.end(), colMajor);
+}
+std::ostream& operator<<(std::ostream &os, const SparseMatrix &mat){
+	for (Element e : mat.elements)
+		os << "element: " << e.row << ", " << e.col << " : " << e.val << "\n";
+	return os;
 }

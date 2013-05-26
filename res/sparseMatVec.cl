@@ -15,11 +15,11 @@ __kernel void sparseMatVec(int nVals, __global int *rows, __global int *cols,
 	for (int i = id; i < nVals; ++i){
 		if (rows[i] == id && startIdx == -1)
 			startIdx = i;
-		else if (rows[i] == id + 1 && endIdx == -1){
+		if (rows[i] == id + 1 && endIdx == -1){
 			endIdx = i - 1;
 			break;
 		}
-		else if (i == nVals - 1 && endIdx == -1)
+		if (i == nVals - 1 && endIdx == -1)
 			endIdx = i;
 	}
 	float sum = 0.0f;

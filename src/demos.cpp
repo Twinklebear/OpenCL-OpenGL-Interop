@@ -372,7 +372,7 @@ std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> 
 
 	//Read the solved x vector
 	std::vector<float> x;
-	x.reserve(dim);
+	x.resize(dim);
 	tiny.readData(resBuf, dim * sizeof(float), &x[0], 2 * sizeof(float));
 
 	delete[] rows;
@@ -380,4 +380,44 @@ std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> 
 	delete[] vals;
 	
 	return x;
+}
+std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> vec, CL::TinyCL &tiny){
+	if (vec.size() != matrix.dim){
+		std::cout << "Vector size doesn't match matrix dimensions" << std::endl;
+		return std::vector<float>();
+	}
+
+	cl::Program program = tiny.loadProgram("../res/sparseMatVec.cl");
+	cl::Kernel kernel = tiny.loadKernel(program, "sparseMatVec");
+
+	int nVals = matrix.elements.size();
+	int *rows = new int[nVals];
+	int *cols = new int[nVals];
+	float *vals = new float[nVals];
+	matrix.getRaw(rows, cols, vals);
+
+	cl::Buffer rowBuf = tiny.buffer(CL::MEM::READ_ONLY, nVals * sizeof(float), rows);
+	cl::Buffer colBuf = tiny.buffer(CL::MEM::READ_ONLY, nVals * sizeof(float), cols);
+	cl::Buffer valBuf = tiny.buffer(CL::MEM::READ_ONLY, nVals * sizeof(float), vals);
+	cl::Buffer vecBuf = tiny.buffer(CL::MEM::READ_ONLY, vec.size() * sizeof(float), &vec[0]);
+	cl::Buffer resBuf = tiny.buffer(CL::MEM::WRITE_ONLY, vec.size() * sizeof(float));
+
+	kernel.setArg(0, sizeof(int), &nVals);
+	kernel.setArg(1, rowBuf);
+	kernel.setArg(2, colBuf);
+	kernel.setArg(3, valBuf);
+	kernel.setArg(4, vecBuf);
+	kernel.setArg(5, resBuf);
+
+	tiny.runKernel(kernel, cl::NullRange, matrix.dim);
+
+	std::vector<float> result;
+	result.resize(matrix.dim);
+	tiny.readData(resBuf, matrix.dim * sizeof(float), &result[0]);
+
+	delete[] rows;
+	delete[] cols;
+	delete[] vals;
+
+	return result;
 }
