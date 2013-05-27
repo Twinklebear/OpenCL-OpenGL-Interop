@@ -327,15 +327,13 @@ std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL:
 	tiny.readData(res, sizeof(float) * 4, &vect[0]);
 	return vect;
 }
-std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny){
+std::vector<float> localConjGradSolve(const SparseMatrix &matrix, std::vector<float> &bVec, CL::TinyCL &tiny){
 	if (bVec.size() != matrix.dim){
 		std::cout << "b vector does not match A dim" << std::endl;
 		return std::vector<float>();
 	}
 	cl::Program prog = tiny.loadProgram("../res/conjGrad.cl");
 	cl::Kernel kernel = tiny.loadKernel(prog, "conjGrad");
-
-	std::cout << "conj grad max work group size: " << tiny.maxWorkGroupSize(kernel) << std::endl;
 	
 	//Get the raw data from the matrix
 	int dim = matrix.dim, nElems = matrix.elements.size();
@@ -380,6 +378,127 @@ std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> 
 	delete[] vals;
 	
 	return x;
+}
+std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<float> &b, CL::TinyCL &tiny){
+	if (b.size() != matrix.dim){
+		std::cout << "Error: matrix dimensions doesn't match b dimensions" << std::endl;
+		return std::vector<float>();
+	}
+	cl::Program program = tiny.loadProgram("../res/conjugateGradient.cl");
+	//These kernels could probably be shoved in a vector but for clarity of what's going on
+	//I'll leave them with seperate names for now
+	cl::Kernel sparseMatVec = tiny.loadKernel(program, "sparseMatVec");
+	cl::Kernel bigDot = tiny.loadKernel(program, "bigDot");
+	cl::Kernel initVects = tiny.loadKernel(program, "initVects");
+	cl::Kernel updateXR = tiny.loadKernel(program, "updateXR");
+	cl::Kernel updateDir = tiny.loadKernel(program, "updateDir");
+
+	//Get raw values from the matrix to send to OpenCL
+	std::vector<int> rows, cols;
+	rows.resize(matrix.elements.size());
+	cols.resize(matrix.elements.size());
+	std::vector<float> vals;
+	vals.resize(matrix.elements.size());
+	matrix.getRaw(&rows[0], &cols[0], &vals[0]);
+	
+	//Setup all our buffers
+	//The sparse matrix will be stored in an array of 3 buffers, 0 - rowBuf, 1 - colBuf, 2 - valBuf
+	std::array<cl::Buffer, 3> matrixBuf;
+	matrixBuf[0] = tiny.buffer(CL::MEM::READ_ONLY, rows.size() * sizeof(int), &rows[0]);
+	matrixBuf[1] = tiny.buffer(CL::MEM::READ_ONLY, cols.size() * sizeof(int), &cols[0]);
+	matrixBuf[2] = tiny.buffer(CL::MEM::READ_ONLY, vals.size() * sizeof(float), &vals[0]);
+	//The vector buffers needed, x, r, p, b, and aTimesP
+	//Probably shove these in a vector later too, keep split up for clarity atm
+	cl::Buffer x = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+	cl::Buffer r = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+	cl::Buffer p = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+	cl::Buffer bBuf = tiny.buffer(CL::MEM::READ_ONLY, b.size() * sizeof(float), &b[0]);
+	cl::Buffer aTimesP = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+	cl::Buffer rDotrBuf = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+	cl::Buffer apDotpBuf = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+
+	//Setup unchanging buffer arguments for the kernels
+	initVects.setArg(0, x);
+	initVects.setArg(1, r);
+	initVects.setArg(2, p);
+	initVects.setArg(3, bBuf);
+	//initvects can run while we setup more stuff so start it up
+	tiny.runKernel(initVects, cl::NullRange, cl::NDRange(matrix.dim));
+	//after r is setup we can also run r dot r so queue it up as well
+	bigDot.setArg(0, r);
+	bigDot.setArg(1, r);
+	bigDot.setArg(2, rDotrBuf);
+	tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
+	//sparseMatVec for aTimesP = matrix * p
+	int nVals = matrix.elements.size();
+	sparseMatVec.setArg(0, sizeof(int), &nVals);
+	for (int i = 1; i < 4; ++i)
+		sparseMatVec.setArg(i, matrixBuf[i - 1]);
+	sparseMatVec.setArg(4, p);
+	sparseMatVec.setArg(5, aTimesP);
+
+	updateXR.setArg(1, p);
+	updateXR.setArg(2, aTimesP);
+	updateXR.setArg(3, x);
+	updateXR.setArg(4, r);
+
+	updateDir.setArg(2, r);
+	updateDir.setArg(3, p);
+
+	//TODO: Speed improvements
+	//idea: if I change alpha and old/newRdotR to be buffers instead of straight
+	//values will I see a speed improvement? ie. limit read/write to only
+	//when it's absolutely necessary?
+
+	//Various values we need to track to use in calculations in various kernels
+	float oldRdotR = 0, newRdotR = 0, apdotP = 0, rLength = 0, alpha = 0;
+	tiny.readData(rDotrBuf, sizeof(float), &oldRdotR);
+	newRdotR = oldRdotR;
+	rLength = std::sqrtf(oldRdotR);
+	//We want to go for 1000 iterations or until the solution is close enough
+	//Make i available outside the loop for now so we can print the iteration count
+	int i = 0;
+	for (; i < 1000 && rLength >= 0.01f; ++i){
+		//compute aTimesP = Ap
+		tiny.runKernel(sparseMatVec, cl::NullRange, cl::NDRange(matrix.dim));
+		
+		//now find apDotP = p dot aTimesp (ie. p dot Ap)
+		bigDot.setArg(0, aTimesP);
+		bigDot.setArg(1, p);
+		bigDot.setArg(2, apDotpBuf);
+		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
+		tiny.readData(apDotpBuf, sizeof(float), &apdotP);
+		
+		//Update alpha
+		alpha = oldRdotR / apdotP;
+		
+		//update x & r, x += alpha * p & r -= alpha * atimesP
+		updateXR.setArg(0, sizeof(float), &alpha);
+		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim));
+		
+		//Compute new value for r dot r
+		bigDot.setArg(0, r);
+		bigDot.setArg(1, r);
+		bigDot.setArg(2, rDotrBuf);
+		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
+		tiny.readData(rDotrBuf, sizeof(float), &newRdotR);
+
+		//Update the direction
+		updateDir.setArg(0, sizeof(float), &newRdotR);
+		updateDir.setArg(1, sizeof(float), &oldRdotR);
+		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim));
+		
+		//Update oldRdotR and rLength
+		oldRdotR = newRdotR;
+		rLength = std::sqrtf(oldRdotR);
+	}
+	std::cout << "Solution took: " << i << " iterations, final residual length: " << rLength << std::endl;
+
+	//Read the solution vector, x
+	std::vector<float> solution;
+	solution.resize(matrix.dim);
+	tiny.readData(x, matrix.dim * sizeof(float), &solution[0]);
+	return solution;
 }
 std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> vec, CL::TinyCL &tiny){
 	if (vec.size() != matrix.dim){

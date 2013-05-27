@@ -185,9 +185,19 @@ std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL:
 * Solve a linear system Ax = b (where A is symmetric and sparse) using the Conjugate Gradient method
 * and return the solved x vector. With C++11 move constructor we should be ok just returning
 * the vector 
+* this uses the CG kernel described in OpenCL in Action which is restricted to the max group size
+* of the device
 */
-std::vector<float> conjGradSolve(const SparseMatrix &matrix, std::vector<float> bVec, CL::TinyCL &tiny);
+std::vector<float> localConjGradSolve(const SparseMatrix &matrix, std::vector<float> &bVec, CL::TinyCL &tiny);
 /*
-* Multiply a sparse matrix by a vector: Av = c and get back the result vector, c
+* Solve a linear system Ax = b where A is sparse symmetric and positive definite using the Conjugate Gradient
+* method and return the solved x vector using the OpenCL context passed
+* Note: the host code will currently only accept square matrices that are 2nx2n but I think the kernel should 
+* be able to handle rectangular 2mx2n size, I just need to track # row and # col seperately in the SparseMatrix
+* also the matrix should be in row major order (the default sorting for SparseMatrix)
+*/
+std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<float> &b, CL::TinyCL &tiny);
+/*
+* Multiply a sparse matrix by a vector: Av = c and get back the result vector
 */
 std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> vec, CL::TinyCL &tiny);

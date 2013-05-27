@@ -1,5 +1,5 @@
 /*
-* Solve a sparse symmetric matrix using CG method with various portions
+* Solve a sparse symmetric positive-definite matrix using CG method with various portions
 * of the method split into their own kernels to allow for finer grained
 * parallelism and not be limited by the devices work group size since 
 * global synchronization is now handled by the host
@@ -88,7 +88,7 @@ __kernel void updateXR(float alpha, __global float *p, __global float *aTimesP,
 	r[id] -= alpha * aTimesP[id];
 }
 /*
-* Update the search direction, p
+* Update the CG search direction
 */
 __kernel void updateDir(float newRDotR, float oldRDotR, __global float *r, __global float *p){
 	int id = get_global_id(0);

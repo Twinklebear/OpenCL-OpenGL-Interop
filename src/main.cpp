@@ -1,69 +1,52 @@
-#include <cmath>
 #include <vector>
+#include <chrono>
 #include "sparsematrix.h"
 #include "demos.h"
 
 int main(int argc, char** argv){
 	CL::TinyCL tiny(CL::DEVICE::GPU);
 	
-	const size_t nRow = 4;
-	std::array<float, nRow * nRow> mat;
-	for (int i = 0; i < mat.size(); ++i)
-		mat[i] = i;
-	std::cout << "Matrix:";
-	logMatrix(mat);
+	SparseMatrix sMat("../res/bcsstk05.mtx");
+	std::vector<float> b;
+	for (int i = 0; i < sMat.dim; ++i)
+		b.push_back(i);
 
-	std::array<float, nRow> vec;
-	for (int i = 0; i < vec.size(); ++i)
-		vec[i] = i;
+	//Compare my kernel with the book kernel to make sure it's correct
+	std::vector<float> localRes, myRes;
 
-	std::cout << "Vector: ";
-	for (auto i : vec)
-		std::cout << i << " ";
-	std::cout << std::endl;
+	//Measure elapsed time for my kernel and book kernel
+	std::cout << "Book CG:\n";
+	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	localRes = localConjGradSolve(sMat, b, tiny);
+	std::chrono::high_resolution_clock::duration bookTime = std::chrono::high_resolution_clock::now() - start;
 
-	auto res = matrixVecMult(mat, vec, tiny);
+	std::cout << "------\nMy CG:\n";
+	start = std::chrono::high_resolution_clock::now();
+	myRes = conjugateGradient(sMat, b, tiny);
+	std::chrono::high_resolution_clock::duration myTime = std::chrono::high_resolution_clock::now() - start;
 
-	std::cout << "Result: ";
-	for (auto i : res)
-		std::cout << i << " ";
-	std::cout << std::endl;
-
-	std::array<float, 4 * 3> vec2;
-	std::cout << "Vector being dotted with self: ";
-	for (int i = 0; i < vec2.size(); ++i){
-		vec2[i] = i;
-		std::cout << i << ", ";
+	std::cout << "-----\nTime difference, mine - book: " 
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(myTime - bookTime).count()
+		<< "ms" << std::endl;
+	
+	//If the results are differ at a digit higher than the some minimal
+	//error then my implementation is wrong
+	float avgDiff = 0, maxDif = 1e-6;
+	int nDifferent = 0;
+	for (int i = 0; i < localRes.size(); ++i){
+		float diff = std::abs(localRes.at(i) - myRes.at(i));
+		if (diff > maxDif){
+			avgDiff += diff;
+			++nDifferent;
+		}
 	}
-	std::cout << std::endl;
+	if (nDifferent != 0)
+		avgDiff /= nDifferent;
 
-	std::cout << "Result: " << dot(vec2, vec2, tiny) << std::endl;
-
-	//Try out the sparse matrix mult kernel
-	int row[10], col[10];
-	float vals[10];
-	std::vector<float> vecS;
-	for (int i = 0; i < 10; ++i){
-		row[i] = i;
-		col[i] = i;
-		vals[i] = 2;
-		vecS.push_back(i);
-	}
-	std::cout << "Initial vector: ";
-	for (auto i : vecS)
-		std::cout << i << ", ";
-	std::cout << std::endl;
-
-	SparseMatrix simple(row, col, vals, 10);
-	std::cout << "SparseMat:\n" << simple << std::endl;
-
-	vecS = sparseVecMult(simple, vecS, tiny);
-
-	std::cout << "Result: ";
-	for (auto i : vecS)
-		std::cout << i << ", ";
-	std::cout << std::endl;
-
+	std::cout << "# of values differing by more than " << std::scientific << maxDif
+		<< " : " << nDifferent << " of " << myRes.size()
+		<< "\nAverage difference between values: " 
+		<< avgDiff << std::endl;
 
 	return 0;
 }
