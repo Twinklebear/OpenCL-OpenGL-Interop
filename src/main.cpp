@@ -25,7 +25,11 @@ int main(int argc, char** argv){
 	myRes = conjugateGradient(sMat, b, tiny);
 	std::chrono::high_resolution_clock::duration myTime = std::chrono::high_resolution_clock::now() - start;
 
-	std::cout << "-----\nTime difference, mine - book: " 
+	std::cout << "-----\nBook solve time: " 
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(bookTime).count() << "ms\n"
+		<< "My solve time: "
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(myTime).count() << "ms\n"
+		<< "Time difference, mine - book: " 
 		<< std::chrono::duration_cast<std::chrono::milliseconds>(myTime - bookTime).count()
 		<< "ms" << std::endl;
 	
