@@ -392,6 +392,7 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	cl::Kernel initVects = tiny.loadKernel(program, "initVects");
 	cl::Kernel updateXR = tiny.loadKernel(program, "updateXR");
 	cl::Kernel updateDir = tiny.loadKernel(program, "updateDir");
+	cl::Kernel updateAlpha = tiny.loadKernel(program, "updateAlpha");
 
 	//Get raw values from the matrix to send to OpenCL
 	std::vector<int> rows, cols;
@@ -414,8 +415,12 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	cl::Buffer p = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
 	cl::Buffer bBuf = tiny.buffer(CL::MEM::READ_ONLY, b.size() * sizeof(float), &b[0]);
 	cl::Buffer aTimesP = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
-	cl::Buffer rDotrBuf = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
 	cl::Buffer apDotpBuf = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
+	cl::Buffer alpha = tiny.buffer(CL::MEM::READ_WRITE, sizeof(float));
+	//the r dot r buffer holds old r dot r [0] and new r dot r [1]
+	std::array<cl::Buffer, 2> rDotrBuf;
+	for (int i = 0; i < rDotrBuf.size(); ++i)
+		rDotrBuf[i] = tiny.buffer(CL::MEM::READ_WRITE, matrix.dim * sizeof(float));
 
 	//Setup unchanging buffer arguments for the kernels
 	initVects.setArg(0, x);
@@ -427,7 +432,7 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	//after r is setup we can also run r dot r so queue it up as well
 	bigDot.setArg(0, r);
 	bigDot.setArg(1, r);
-	bigDot.setArg(2, rDotrBuf);
+	bigDot.setArg(2, rDotrBuf[0]);
 	tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
 	//sparseMatVec for aTimesP = matrix * p
 	int nVals = matrix.elements.size();
@@ -437,24 +442,30 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	sparseMatVec.setArg(4, p);
 	sparseMatVec.setArg(5, aTimesP);
 
+	updateXR.setArg(0, alpha);
 	updateXR.setArg(1, p);
 	updateXR.setArg(2, aTimesP);
 	updateXR.setArg(3, x);
 	updateXR.setArg(4, r);
 
+	updateDir.setArg(0, rDotrBuf[1]);
+	updateDir.setArg(1, rDotrBuf[0]);
 	updateDir.setArg(2, r);
 	updateDir.setArg(3, p);
+
+	updateAlpha.setArg(0, rDotrBuf[0]);
+	updateAlpha.setArg(1, apDotpBuf);
+	updateAlpha.setArg(2, alpha);
 
 	//TODO: Speed improvements
 	//idea: if I change alpha and old/newRdotR to be buffers instead of straight
 	//values will I see a speed improvement? ie. limit read/write to only
-	//when it's absolutely necessary?
+	//when it's absolutely necessary? The only time the read is necessary
+	//is in reading out r dot r to compute the residual length to see
+	//if we should continue
 
 	//Various values we need to track to use in calculations in various kernels
-	float oldRdotR = 0, newRdotR = 0, apdotP = 0, rLength = 0, alpha = 0;
-	tiny.readData(rDotrBuf, sizeof(float), &oldRdotR);
-	newRdotR = oldRdotR;
-	rLength = std::sqrtf(oldRdotR);
+	float rLength = 100;
 	//We want to go for 1000 iterations or until the solution is close enough
 	//Make i available outside the loop for now so we can print the iteration count
 	int i = 0;
@@ -467,30 +478,27 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 		bigDot.setArg(1, p);
 		bigDot.setArg(2, apDotpBuf);
 		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
-		tiny.readData(apDotpBuf, sizeof(float), &apdotP);
 		
 		//Update alpha
-		alpha = oldRdotR / apdotP;
-		
+		tiny.runKernel(updateAlpha, cl::NullRange, cl::NDRange(1));
+
 		//update x & r, x += alpha * p & r -= alpha * atimesP
-		updateXR.setArg(0, sizeof(float), &alpha);
 		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim));
 		
 		//Compute new value for r dot r
 		bigDot.setArg(0, r);
 		bigDot.setArg(1, r);
-		bigDot.setArg(2, rDotrBuf);
+		bigDot.setArg(2, rDotrBuf[1]);
 		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
-		tiny.readData(rDotrBuf, sizeof(float), &newRdotR);
 
 		//Update the direction
-		updateDir.setArg(0, sizeof(float), &newRdotR);
-		updateDir.setArg(1, sizeof(float), &oldRdotR);
 		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim));
 		
 		//Update oldRdotR and rLength
-		oldRdotR = newRdotR;
-		rLength = std::sqrtf(oldRdotR);
+		tiny.mQueue.enqueueCopyBuffer(rDotrBuf[1], rDotrBuf[0], 0, 0, sizeof(float));
+		float rdotr = 0;
+		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr);
+		rLength = std::sqrtf(rdotr);
 	}
 	std::cout << "Solution took: " << i << " iterations, final residual length: " << rLength << std::endl;
 

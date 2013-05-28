@@ -78,19 +78,28 @@ __kernel void initVects(__global float *x, __global float *r, __global float *p,
 	p[id] = b[id];
 }
 /*
+* Update the value of alpha, we do it on the GPU to avoid slow read/writes 
+* back and forth to the host
+*/
+__kernel void updateAlpha(__global float *oldRDotR, __global float *apDotp, __global float *alpha){
+	*alpha = (*oldRDotR) / (*apDotp);
+}
+/*
 * Update the x and r guesses
 */
-__kernel void updateXR(float alpha, __global float *p, __global float *aTimesP,
+__kernel void updateXR(__global float *alpha, __global float *p, __global float *aTimesP,
 	__global float *x, __global float *r)
 {
 	int id = get_global_id(0);
-	x[id] += alpha * p[id];
-	r[id] -= alpha * aTimesP[id];
+	x[id] += (*alpha) * p[id];
+	r[id] -= (*alpha) * aTimesP[id];
 }
 /*
 * Update the CG search direction
 */
-__kernel void updateDir(float newRDotR, float oldRDotR, __global float *r, __global float *p){
+__kernel void updateDir(__global float *newRDotR, __global float *oldRDotR, 
+	__global float *r, __global float *p)
+{
 	int id = get_global_id(0);
-	p[id] = r[id] + (newRDotR / oldRDotR) * p[id];
+	p[id] = r[id] + (*newRDotR) / (*oldRDotR) * p[id];
 }
