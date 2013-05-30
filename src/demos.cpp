@@ -56,8 +56,7 @@ void liveAdvectTexture(){
 	
 	glm::mat4 view = glm::lookAt<float>(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
 	glm::mat4 proj = glm::perspective(60.0f, (float)(window.Box().w) /  (float)(window.Box().h), 0.1f, 100.0f);
-	//Curious why translating back -1.0f in z causes the texture to flicker. could it be a mip-maps thing?
-	glm::mat4 model = glm::scale(0.55f, 0.55f, 1.0f);
+	glm::mat4 model = glm::translate<float>(0, 0, -1) * glm::scale(0.55f, 0.55f, 1.0f);
 	glm::mat4 mvp = proj * view * model;
 	prog.uniformMat4x4("mvp", mvp);
 
@@ -66,8 +65,8 @@ void liveAdvectTexture(){
 	* instead we'll flip the in/out image each step and draw the out image by setting active = out
 	*/
 	//Make textures to work with
-	GL::Texture texA("../res/map.png");
-	GL::Texture texB("../res/blank.png");
+	GL::Texture texA("../res/map.png", true, SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB);
+	GL::Texture texB("../res/blank.png", true, SOIL_FLAG_INVERT_Y | SOIL_FLAG_NTSC_SAFE_RGB);
 	//Active is the actual texture we will draw
 	GL::Texture active = texB;
 
