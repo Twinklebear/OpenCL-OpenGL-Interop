@@ -56,11 +56,13 @@ cl::Kernel CL::TinyCL::loadKernel(const cl::Program &prog, std::string kernel){
 	}
 	throw std::runtime_error("Failed to load kernel");
 }
-cl::Buffer CL::TinyCL::buffer(MEM mem, size_t dataSize, void *data){
+cl::Buffer CL::TinyCL::buffer(MEM mem, size_t dataSize, void *data, bool blocking,
+	const std::vector<cl::Event> *dependencies, cl::Event *notify)
+{
 	try {
 		cl::Buffer buf(mContext, mem, dataSize);
 		if (data != nullptr)
-			mQueue.enqueueWriteBuffer(buf, CL_TRUE, 0, dataSize, data);
+			mQueue.enqueueWriteBuffer(buf, blocking, 0, dataSize, data, dependencies, notify);
 		return buf;
 	}
 	catch (const cl::Error &e){
@@ -73,7 +75,8 @@ cl::BufferGL CL::TinyCL::bufferGL(MEM mem, GL::VertexBuffer &vbo){
 	return cl::BufferGL(mContext, mem, vbo);
 }
 cl::Image2D CL::TinyCL::image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin,
-	cl::size_t<3> region, void *pixels)
+	cl::size_t<3> region, void *pixels, bool blocking, const std::vector<cl::Event> *dependencies, 
+	cl::Event *notify)
 {
 	try {
 		//I think this is the error line since I get it even when passing no pixels
@@ -82,7 +85,8 @@ cl::Image2D CL::TinyCL::image2d(MEM mem, cl::ImageFormat format, int w, int h, c
 		//But it's only when writing to GPU? Very strange
 		cl::Image2D img(mContext, mem, format, w, h);
 		if (pixels != nullptr)
-			mQueue.enqueueWriteImage(img, CL_TRUE, origin, region, 0, 0, pixels);
+			mQueue.enqueueWriteImage(img, blocking, origin, region, 0, 0, pixels,
+				dependencies, notify);
 		return img;
 	}
 	catch (const cl::Error &e){
@@ -100,35 +104,43 @@ cl::Image2DGL CL::TinyCL::imageFromTexture(MEM mem, GL::Texture &tex){
 	return cl::Image2DGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
 }
 #endif
-void CL::TinyCL::writeData(const cl::Buffer &b, size_t dataSize, void *data){
-	mQueue.enqueueWriteBuffer(b, CL_TRUE, 0, dataSize, data);
+void CL::TinyCL::writeData(const cl::Buffer &b, size_t dataSize, void *data, bool blocking,
+	const std::vector<cl::Event> *dependencies, cl::Event *notify)
+{
+	mQueue.enqueueWriteBuffer(b, blocking, 0, dataSize, data, dependencies, notify);
 }
-void CL::TinyCL::writeData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
-	mQueue.enqueueWriteImage(img, CL_TRUE, origin, region, 0, 0, pixels);
+void CL::TinyCL::writeData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels,
+	bool blocking, const std::vector<cl::Event> *dependencies, cl::Event *notify)
+{
+	mQueue.enqueueWriteImage(img, blocking, origin, region, 0, 0, pixels, dependencies, notify);
 }
-void CL::TinyCL::readData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset){
+void CL::TinyCL::readData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset,
+	bool blocking, const std::vector<cl::Event> *dependencies, cl::Event *notify)
+{
 	try {
-		mQueue.enqueueReadBuffer(buf, CL_TRUE, offset, dataSize, data);
-		mQueue.finish();
+		mQueue.enqueueReadBuffer(buf, blocking, offset, dataSize, data, dependencies, notify);
 	}
 	catch (const cl::Error &e){
 		std::cout << "Error reading buffer: " << e.what()
 			<< " code: " << e.err() << std::endl;
 	}
 }
-void CL::TinyCL::readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels){
+void CL::TinyCL::readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels,
+	 bool blocking, const std::vector<cl::Event> *dependencies, cl::Event *notify)
+{
 	try {
-		mQueue.enqueueReadImage(img, CL_TRUE, origin, region, 0, 0, pixels);
-		mQueue.finish();
+		mQueue.enqueueReadImage(img, blocking, origin, region, 0, 0, pixels, dependencies, notify);
 	}
 	catch (const cl::Error &e){
 		std::cout << "Error reading buffer: " << e.what()
 			<< " code: " << e.err() << std::endl;
 	}
 }
-void CL::TinyCL::runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset){
+void CL::TinyCL::runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset,
+	bool blocking, const std::vector<cl::Event> *dependencies, cl::Event *notify)
+{
 	try {
-		mQueue.enqueueNDRangeKernel(kernel, offset, global, local);
+		mQueue.enqueueNDRangeKernel(kernel, offset, global, local, dependencies, notify);
 	}
 	catch (const cl::Error &e){
 		std::cout << "Error running nd range kernel: " << e.what()

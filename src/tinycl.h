@@ -36,9 +36,13 @@ namespace CL {
 		* @param dataSize Size of buffer to create
 		* @param data The data to write to the buffer, default is nullptr in which case
 		*       the buffer will be made but no data written
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		* @return The created buffer
 		*/
-		cl::Buffer buffer(MEM mem, size_t dataSize, void *data = nullptr);
+		cl::Buffer buffer(MEM mem, size_t dataSize, void *data = nullptr, bool blocking = false,
+			const std::vector<cl::Event> *dependencies = NULL, cl::Event *notify = NULL);
 		/*
 		* Create a cl::BufferGL and pass some data to it if desired
 		* @param mem The type of memory the buffer is (read, write, read&write)
@@ -58,10 +62,14 @@ namespace CL {
 		* @param region Size of region of data to read, default empty
 		* @param pixels The pixel data to read, default is nullptr in which case
 		*       the image2d is created but no data written
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		* @return The created Image2D
 		*/
 		cl::Image2D image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin = cl::size_t<3>(),
-			cl::size_t<3> region = cl::size_t<3>(), void *pixels = nullptr);
+			cl::size_t<3> region = cl::size_t<3>(), void *pixels = nullptr, bool blocking = false,
+			const std::vector<cl::Event> *dependencies = NULL, cl::Event *notify = NULL);
 		/*
 		* Create an image from a GL::Texture
 		* The ImageGL is in OpenCL 1.2 only (I think)
@@ -79,39 +87,63 @@ namespace CL {
 		* @param buf The buffer to write too
 		* @param dataSize Size of data to write
 		* @param data The data to write
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		*/
-		void writeData(const cl::Buffer &b, size_t dataSize, void *data);
+		void writeData(const cl::Buffer &b, size_t dataSize, void *data, bool blocking = false,
+			const std::vector<cl::Event> *dependencies = NULL, cl::Event *notify = NULL);
 		/*
 		* Write some data to an Image2d
 		* @param img The image2d to write too
 		* @param origin The point to start reading values from
 		* @param region The size of region to read data from
 		* @param pixels The data to read
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		*/
-		void writeData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels);
+		void writeData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels,
+			bool blocking = false, const std::vector<cl::Event> *dependencies = NULL,
+			cl::Event *notify = NULL);
 		/*
 		* Read the data from some buffer into the block of memory pointed to by data
 		* @param buf The device buffer to read from
 		* @param dataSize The size of the data to read
 		* @param data Where to put the data
 		* @param offset Offset in the buffer to start reading from
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		*/
-		void readData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset = 0);
+		void readData(const cl::Buffer &buf, size_t dataSize, void *data, size_t offset = 0,
+			bool blocking = false, const std::vector<cl::Event> *dependencies = NULL,
+			cl::Event *notify = NULL);
 		/*
 		* Read the image data from some kernel image argument into data
 		* @param img The device image data to read from
 		* @param origin The point to start reading from
 		* @param region The size of the region to read (or is it the coord to read too?)
 		* @param pixels The location to read the data too
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		*/
-		void readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels);
+		void readData(const cl::Image &img, cl::size_t<3> origin, cl::size_t<3> region, void *pixels,
+			bool blocking = false, const std::vector<cl::Event> *dependencies = NULL,
+			cl::Event *notify = NULL);
 		/*
 		* Run the kernel
 		* @param local The local dimensions
 		* @param numGroups The global dimensions
 		* @param offset The initial offset for each id dimension, default is NullRange, ie no offset
+		* @param blocking If the operation should be blocking or not, default false
+		* @param dependencies List of Events that this operation depends on
+		* @param notify Event to alert when this operation completes
 		*/
-		void runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, cl::NDRange offset = cl::NullRange);
+		void runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRange global, 
+			cl::NDRange offset = cl::NullRange, bool blocking = false,
+			const std::vector<cl::Event> *dependencies = NULL, cl::Event *notify = NULL);
 		/*
 		* Get the preferred work group size for some kernel on the device
 		* @param kernel The kernel to get preferred size of

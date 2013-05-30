@@ -49,7 +49,7 @@ float dot(std::array<float, N> &a, std::array<float, N> &b, CL::TinyCL &tiny){
 	tiny.runKernel(dotKernel, cl::NullRange, cl::NDRange(N / 4));
 
 	float *vals = new float[N / 4];
-	tiny.readData(resBuf, (N / 4) * sizeof(float), vals);
+	tiny.readData(resBuf, (N / 4) * sizeof(float), vals, NULL, true);
 	
 	float sum = 0.0f;
 	for (int i = 0; i < N / 4; ++i)
@@ -98,7 +98,7 @@ std::array<float, N> transpose(std::array<float, N> &matrix, CL::TinyCL &tiny){
 	cl::Buffer bufMat = transposeBuf(matrix, tiny);
 	//Read and return
 	std::array<float, N> res;
-	tiny.readData(bufMat, sizeof(float) * N, &res[0]);
+	tiny.readData(bufMat, sizeof(float) * N, &res[0], NULL, true);
 	return res;
 }
 /*
@@ -135,7 +135,7 @@ std::array<float, N> matrixMult(std::array<float, N> &a, std::array<float, N> &b
 	cl::Buffer bufMat = matrixMultBuf(a, b, tiny);
 	//Read and return
 	std::array<float, N> res;
-	tiny.readData(bufMat, sizeof(float) * N, &res[0]);
+	tiny.readData(bufMat, sizeof(float) * N, &res[0], NULL, true);
 	return res;
 }
 /*
@@ -159,7 +159,7 @@ std::array<float, N> matrixVecMult(std::array<float, N * N> &a, std::array<float
 	tiny.runKernel(kernel, cl::NullRange, cl::NDRange(N));
 
 	std::array<float, N> res;
-	tiny.readData(resBuf, N * sizeof(float), &res[0]);
+	tiny.readData(resBuf, N * sizeof(float), &res[0], NULL, true);
 	return res;
 }
 /*

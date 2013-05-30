@@ -56,7 +56,7 @@ void liveAdvectTexture(){
 	
 	glm::mat4 view = glm::lookAt<float>(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
 	glm::mat4 proj = glm::perspective(60.0f, (float)(window.Box().w) /  (float)(window.Box().h), 0.1f, 100.0f);
-	glm::mat4 model = glm::translate<float>(0, 0, -1) * glm::scale(0.55f, 0.55f, 1.0f);
+	glm::mat4 model = glm::scale(0.55f, 0.55f, 1.0f);
 	glm::mat4 mvp = proj * view * model;
 	prog.uniformMat4x4("mvp", mvp);
 
@@ -303,7 +303,7 @@ cl::Buffer householderBuf(std::array<float, 4> vect, CL::TinyCL &tiny){
 std::array<float, 16> householder(std::array<float, 4> vect, CL::TinyCL &tiny){
 	cl::Buffer res = householderBuf(vect, tiny);
 	std::array<float, 16> mat;
-	tiny.readData(res, sizeof(float) * 16, &mat[0]);
+	tiny.readData(res, sizeof(float) * 16, &mat[0], NULL, true);
 	return mat;
 }
 cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny){
@@ -323,7 +323,7 @@ cl::Buffer reflectBuf(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL
 std::array<float, 4> reflect(std::array<float, 4> v, std::array<float, 4> u, CL::TinyCL &tiny){
 	cl::Buffer res = reflectBuf(v, u, tiny);
 	std::array<float, 4> vect;
-	tiny.readData(res, sizeof(float) * 4, &vect[0]);
+	tiny.readData(res, sizeof(float) * 4, &vect[0], NULL, true);
 	return vect;
 }
 std::vector<float> localConjGradSolve(const SparseMatrix &matrix, std::vector<float> &bVec, CL::TinyCL &tiny){
@@ -364,13 +364,13 @@ std::vector<float> localConjGradSolve(const SparseMatrix &matrix, std::vector<fl
 
 	//Read results
 	float info[2];
-	tiny.readData(resBuf, 2 * sizeof(float), info);
+	tiny.readData(resBuf, 2 * sizeof(float), info, NULL, true);
 	std::cout << "After: " << info[0] << " iterations, the residual length is: " << info[1] << std::endl;
 
 	//Read the solved x vector
 	std::vector<float> x;
 	x.resize(dim);
-	tiny.readData(resBuf, dim * sizeof(float), &x[0], 2 * sizeof(float));
+	tiny.readData(resBuf, dim * sizeof(float), &x[0], 2 * sizeof(float), true);
 
 	delete[] rows;
 	delete[] cols;
@@ -496,7 +496,7 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 		//Update oldRdotR and rLength
 		tiny.mQueue.enqueueCopyBuffer(rDotrBuf[1], rDotrBuf[0], 0, 0, sizeof(float));
 		float rdotr = 0;
-		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr);
+		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true);
 		rLength = std::sqrtf(rdotr);
 	}
 	std::cout << "Solution took: " << i << " iterations, final residual length: " << rLength << std::endl;
@@ -504,7 +504,7 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	//Read the solution vector, x
 	std::vector<float> solution;
 	solution.resize(matrix.dim);
-	tiny.readData(x, matrix.dim * sizeof(float), &solution[0]);
+	tiny.readData(x, matrix.dim * sizeof(float), &solution[0], NULL, true);
 	return solution;
 }
 std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> vec, CL::TinyCL &tiny){
@@ -539,7 +539,7 @@ std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> 
 
 	std::vector<float> result;
 	result.resize(matrix.dim);
-	tiny.readData(resBuf, matrix.dim * sizeof(float), &result[0]);
+	tiny.readData(resBuf, matrix.dim * sizeof(float), &result[0], NULL, true);
 
 	delete[] rows;
 	delete[] cols;
