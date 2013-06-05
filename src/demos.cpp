@@ -272,7 +272,7 @@ void openglCompute(){
 	glBufferData(GL_DISPATCH_INDIRECT_BUFFER, sizeof(globalDim), globalDim, GL_STATIC_DRAW);
 	glDispatchComputeIndirect(0);
 
-	std::cout << "Error? " << std::hex << glGetError() << std::endl;
+	Util::checkError("Dispatched compute");
 
 	//Now read out the results, interesting that they print as [0-9] then [a-f]
 	int *outData = (int*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
