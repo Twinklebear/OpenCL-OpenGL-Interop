@@ -274,7 +274,6 @@ void openglCompute(){
 
 	Util::checkError("Dispatched compute");
 
-	//Now read out the results, interesting that they print as [0-9] then [a-f]
 	int *outData = (int*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
 	std::cout << "Data read: ";
 	for (int i = 0; i < 16; ++i)
