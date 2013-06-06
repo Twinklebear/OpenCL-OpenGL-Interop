@@ -24,8 +24,9 @@ namespace CL {
 		* Setup the system to run on the device type specified
 		* @param dev Device type to look for
 		* @param interop True if an OpenGL interop context is desired, default false
+		* @param profile If profiling info is desired or not
 		*/
-		TinyCL(DEVICE dev, bool interop = false);
+		TinyCL(DEVICE dev, bool interop = false, bool profile = false);
 		//Load a Program for use
 		cl::Program loadProgram(std::string file);
 		//Load a kernel from a program
@@ -161,14 +162,16 @@ namespace CL {
 		/**
 		* Select the device to be used and setup the context and command queue
 		* @param dev Device type to look for
+		* @param profile If we want profiling info available
 		*/
-		void selectDevice(DEVICE dev);
+		void selectDevice(DEVICE dev, bool profile = false);
 		/**
 		* Selecte the device to be used and setup the context and cmd queue for 
 		* an OpenGL interop context
 		* @param dev Device type to get
+		* @param profile If we want profiling info available
 		*/
-		void selectInteropDevice(DEVICE dev);
+		void selectInteropDevice(DEVICE dev, bool profile = false);
 
 	public:
 		std::vector<cl::Platform> mPlatforms;

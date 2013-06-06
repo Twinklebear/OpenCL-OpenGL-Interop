@@ -4,9 +4,10 @@
 #include "demos.h"
 
 int main(int argc, char** argv){
-	CL::TinyCL tiny(CL::DEVICE::GPU);
+	CL::TinyCL tiny(CL::DEVICE::GPU, false, true);
 
 	SparseMatrix sMat("../res/bcsstk05.mtx");
+	std::cout << "Computing CG on matrix of dim: " << sMat.dim << std::endl;
 	std::vector<float> b;
 	for (int i = 0; i < sMat.dim; ++i)
 		b.push_back(i);

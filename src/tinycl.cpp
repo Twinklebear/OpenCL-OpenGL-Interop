@@ -20,11 +20,11 @@
 #include <OpenGL/OpenGL.h>
 #endif
 
-CL::TinyCL::TinyCL(DEVICE dev, bool interop){
+CL::TinyCL::TinyCL(DEVICE dev, bool interop, bool profile){
 	if (interop)
-		selectInteropDevice(dev);
+		selectInteropDevice(dev, profile);
 	else
-		selectDevice(dev);
+		selectDevice(dev, profile);
 }
 cl::Program CL::TinyCL::loadProgram(std::string file){
 	cl::Program program;
@@ -147,7 +147,7 @@ void CL::TinyCL::runKernel(const cl::Kernel &kernel, cl::NDRange local, cl::NDRa
 			<< " code: " << e.err() << std::endl;
 	}
 }
-void CL::TinyCL::selectDevice(DEVICE dev){
+void CL::TinyCL::selectDevice(DEVICE dev, bool profile){
 	try {
 		cl::Platform::get(&mPlatforms);
 		//Find the first platform that is the device type we want
@@ -173,7 +173,10 @@ void CL::TinyCL::selectDevice(DEVICE dev){
 			<< "\nMax Work Group Size: " << mDevices.at(0).getInfo<CL_DEVICE_MAX_WORK_GROUP_SIZE>()
 			<< std::endl;
 		mContext = cl::Context(mDevices);
-		mQueue = cl::CommandQueue(mContext, mDevices.at(0));
+		if (profile)
+			mQueue = cl::CommandQueue(mContext, mDevices.at(0), CL_QUEUE_PROFILING_ENABLE);
+		else
+			mQueue = cl::CommandQueue(mContext, mDevices.at(0));
 	}
 	catch (const cl::Error &e){
 		std::cout << "Error selecting device: " << e.what() 
@@ -181,7 +184,7 @@ void CL::TinyCL::selectDevice(DEVICE dev){
 		throw e;
 	}
 }
-void CL::TinyCL::selectInteropDevice(DEVICE dev){
+void CL::TinyCL::selectInteropDevice(DEVICE dev, bool profile){
 	try {
 		//We assume only the first device and platform will be used
 		//This is after all a lazy implementation
@@ -214,7 +217,11 @@ void CL::TinyCL::selectInteropDevice(DEVICE dev){
 		mContext = cl::Context(mDevices, properties);
 		//Grab the OpenGL device
 		mDevices = mContext.getInfo<CL_CONTEXT_DEVICES>();
-		mQueue = cl::CommandQueue(mContext, mDevices.at(0));
+		if (profile)
+			mQueue = cl::CommandQueue(mContext, mDevices.at(0), CL_QUEUE_PROFILING_ENABLE);
+		else
+			mQueue = cl::CommandQueue(mContext, mDevices.at(0));
+
 		std::cout << "OpenCL Info:" 
 			<< "\nName: " << mDevices.at(0).getInfo<CL_DEVICE_NAME>()
 			<< "\nVendor: " << mDevices.at(0).getInfo<CL_DEVICE_VENDOR>() 

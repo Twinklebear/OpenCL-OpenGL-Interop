@@ -377,6 +377,21 @@ std::vector<float> localConjGradSolve(const SparseMatrix &matrix, std::vector<fl
 	
 	return x;
 }
+//The event callback I'm using for CG profiling, the data will be the kernel name
+void CL_CALLBACK cgEventCallback(cl_event evt, cl_int status, void *data){
+	cl_ulong startns = 0, endns = 0;
+	int err = 0;
+	err = clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &startns, NULL);
+	if (err != 0)
+		std::cout << "error: " << err << std::endl;
+	err = clGetEventProfilingInfo(evt, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &endns, NULL);
+	if (err != 0)
+		std::cout << "error: " << err << std::endl;
+	cl_ulong nanosec = endns - startns;
+	std::cout << *static_cast<std::string*>(data)
+		<< " took: " << nanosec * 1e-6 << "ms"
+		<< std::endl;
+}
 std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<float> &b, CL::TinyCL &tiny){
 	if (b.size() != matrix.dim){
 		std::cout << "Error: matrix dimensions doesn't match b dimensions" << std::endl;
@@ -462,6 +477,14 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	//is in reading out r dot r to compute the residual length to see
 	//if we should continue
 
+	//Some profiling events
+	cl::Event sparseMatVecEvt, apDotApEvt, updateAlphaEvt,
+		updateXREvt, rdotREvt, updateDirEvt, readEvt;
+	//Messages for each print
+	std::string sparse = "sparseMatVec", apDot = "apDotP",
+		updateAlph = "updateAlpha", updatexr = "updateXR",
+		rdotr = "rdotR", updatedir = "updateDir", read = "read rdotr";
+
 	//Various values we need to track to use in calculations in various kernels
 	float rLength = 100;
 	//We want to go for 1000 iterations or until the solution is close enough
@@ -469,33 +492,46 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	int i = 0;
 	for (; i < 1000 && rLength >= 0.01f; ++i){
 		//compute aTimesP = Ap
-		tiny.runKernel(sparseMatVec, cl::NullRange, cl::NDRange(matrix.dim));
+		tiny.runKernel(sparseMatVec, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
+			false, NULL, &sparseMatVecEvt);
+		sparseMatVecEvt.setCallback(CL_COMPLETE, cgEventCallback, &sparse);
 		
 		//now find apDotP = p dot aTimesp (ie. p dot Ap)
 		bigDot.setArg(0, aTimesP);
 		bigDot.setArg(1, p);
 		bigDot.setArg(2, apDotpBuf);
-		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
+		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange,
+			false, NULL, &apDotApEvt);
+		apDotApEvt.setCallback(CL_COMPLETE, cgEventCallback, &apDot);
 		
 		//Update alpha
-		tiny.runKernel(updateAlpha, cl::NullRange, cl::NDRange(1));
+		tiny.runKernel(updateAlpha, cl::NullRange, cl::NDRange(1), cl::NullRange, 
+			false, NULL, &updateAlphaEvt);
+		updateAlphaEvt.setCallback(CL_COMPLETE, cgEventCallback, &apDot);
 
 		//update x & r, x += alpha * p & r -= alpha * atimesP
-		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim));
+		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
+			false, NULL, &updateXREvt);
+		updateXREvt.setCallback(CL_COMPLETE, cgEventCallback, &updatexr);
 		
 		//Compute new value for r dot r
 		bigDot.setArg(0, r);
 		bigDot.setArg(1, r);
 		bigDot.setArg(2, rDotrBuf[1]);
-		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2));
+		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange,
+			false, NULL, &rdotREvt);
+		rdotREvt.setCallback(CL_COMPLETE, cgEventCallback, &rdotr);
 
 		//Update the direction
-		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim));
+		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
+			false, NULL, &updateDirEvt);
+		updateDirEvt.setCallback(CL_COMPLETE, cgEventCallback, &updatedir);
 		
 		//Update oldRdotR and rLength
 		tiny.mQueue.enqueueCopyBuffer(rDotrBuf[1], rDotrBuf[0], 0, 0, sizeof(float));
 		float rdotr = 0;
-		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true);
+		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true, NULL, &readEvt);
+		readEvt.setCallback(CL_COMPLETE, cgEventCallback, &read);
 		rLength = std::sqrtf(rdotr);
 	}
 	std::cout << "Solution took: " << i << " iterations, final residual length: " << rLength << std::endl;
