@@ -4,7 +4,7 @@
 #include "demos.h"
 
 int main(int argc, char** argv){
-	CL::TinyCL tiny(CL::DEVICE::GPU, false, true);
+	CL::TinyCL tiny(CL::DEVICE::GPU);
 
 	SparseMatrix sMat("../res/bcsstk05.mtx");
 	std::cout << "Computing CG on matrix of dim: " << sMat.dim << std::endl;

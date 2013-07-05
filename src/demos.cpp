@@ -13,7 +13,7 @@
 #include <util.h>
 #include <glshader.h>
 #include <glprogram.h>
-#include <glvertexbuffer.h>
+#include <glbuffer.h>
 #include <glvertexarray.h>
 #include <timer.h>
 #include "tinycl.h"
@@ -471,19 +471,6 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	updateAlpha.setArg(2, alpha);
 
 	//TODO: Speed improvements
-	//idea: if I change alpha and old/newRdotR to be buffers instead of straight
-	//values will I see a speed improvement? ie. limit read/write to only
-	//when it's absolutely necessary? The only time the read is necessary
-	//is in reading out r dot r to compute the residual length to see
-	//if we should continue
-
-	//Some profiling events
-	cl::Event sparseMatVecEvt, apDotApEvt, updateAlphaEvt,
-		updateXREvt, rdotREvt, updateDirEvt, readEvt;
-	//Messages for each print
-	std::string sparse = "sparseMatVec", apDot = "apDotP",
-		updateAlph = "updateAlpha", updatexr = "updateXR",
-		rdotr = "rdotR", updatedir = "updateDir", read = "read rdotr";
 
 	//Various values we need to track to use in calculations in various kernels
 	float rLength = 100;
@@ -493,45 +480,38 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	for (; i < 1000 && rLength >= 0.01f; ++i){
 		//compute aTimesP = Ap
 		tiny.runKernel(sparseMatVec, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
-			false, NULL, &sparseMatVecEvt);
-		sparseMatVecEvt.setCallback(CL_COMPLETE, cgEventCallback, &sparse);
+			false, NULL, NULL);
 		
 		//now find apDotP = p dot aTimesp (ie. p dot Ap)
 		bigDot.setArg(0, aTimesP);
 		bigDot.setArg(1, p);
 		bigDot.setArg(2, apDotpBuf);
 		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange,
-			false, NULL, &apDotApEvt);
-		apDotApEvt.setCallback(CL_COMPLETE, cgEventCallback, &apDot);
+			false, NULL, NULL);
 		
 		//Update alpha
 		tiny.runKernel(updateAlpha, cl::NullRange, cl::NDRange(1), cl::NullRange, 
-			false, NULL, &updateAlphaEvt);
-		updateAlphaEvt.setCallback(CL_COMPLETE, cgEventCallback, &apDot);
+			false, NULL, NULL);
 
 		//update x & r, x += alpha * p & r -= alpha * atimesP
 		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
-			false, NULL, &updateXREvt);
-		updateXREvt.setCallback(CL_COMPLETE, cgEventCallback, &updatexr);
+			false, NULL, NULL);
 		
 		//Compute new value for r dot r
 		bigDot.setArg(0, r);
 		bigDot.setArg(1, r);
 		bigDot.setArg(2, rDotrBuf[1]);
 		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange,
-			false, NULL, &rdotREvt);
-		rdotREvt.setCallback(CL_COMPLETE, cgEventCallback, &rdotr);
+			false, NULL, NULL);
 
 		//Update the direction
 		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
-			false, NULL, &updateDirEvt);
-		updateDirEvt.setCallback(CL_COMPLETE, cgEventCallback, &updatedir);
+			false, NULL, NULL);
 		
 		//Update oldRdotR and rLength
 		tiny.mQueue.enqueueCopyBuffer(rDotrBuf[1], rDotrBuf[0], 0, 0, sizeof(float));
 		float rdotr = 0;
-		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true, NULL, &readEvt);
-		readEvt.setCallback(CL_COMPLETE, cgEventCallback, &read);
+		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true, NULL, NULL);
 		rLength = std::sqrtf(rdotr);
 	}
 	std::cout << "Solution took: " << i << " iterations, final residual length: " << rLength << std::endl;

@@ -7,7 +7,7 @@
 #include <GL/glew.h>
 #include <CL/opencl.h>
 #include <CL/cl.hpp>
-#include <glvertexbuffer.h>
+#include <glbuffer.h>
 #include <glvertexarray.h>
 #include <gltexture.h>
 
