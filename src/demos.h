@@ -201,3 +201,5 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 * Multiply a sparse matrix by a vector: Av = c and get back the result vector
 */
 std::vector<float> sparseVecMult(const SparseMatrix &matrix, std::vector<float> vec, CL::TinyCL &tiny);
+//A comparison test of the my CG program and OpenCL in Action's CG kernel
+void cgComparisonTest();
