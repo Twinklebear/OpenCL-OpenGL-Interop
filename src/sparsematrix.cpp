@@ -41,6 +41,14 @@ SparseMatrix::SparseMatrix(const int *row, const int *col, const float *vals, in
 	else
 		std::sort(elements.begin(), elements.end(), colMajor);
 }
+SparseMatrix::SparseMatrix(const std::vector<Element> &elem, int dim, bool symmetric, bool rowMaj) 
+	: elements(elem), dim(dim), symmetric(symmetric)
+{
+	if (rowMaj)
+		std::sort(elements.begin(), elements.end(), rowMajor);
+	else
+		std::sort(elements.begin(), elements.end(), colMajor);
+}
 void SparseMatrix::getRaw(int *row, int *col, float *val) const {
 	//It's assumed the appropriate amount of space is allocated for each array
 	//ie. that row is a int[elements.size()] array, etc.

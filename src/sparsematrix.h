@@ -42,6 +42,10 @@ public:
 	* to setup a matrix of dim dimensions in the major order desired
 	*/
 	SparseMatrix(const int *row, const int *col, const float *vals, int dim, bool rowMaj = true);
+	/**
+	* Load the matrix from a list of elements, specifying the dimensions and if it's symmetric or not
+	*/
+	SparseMatrix(const std::vector<Element> &elem, int dim, bool symmetric, bool rowMaj = true);
 	//Get the underlying row, column and value arrays for use in passing to OpenCL
 	void getRaw(int *row, int *col, float *val) const;
 	//Print the matrix to a string
