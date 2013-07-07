@@ -480,39 +480,33 @@ std::vector<float> conjugateGradient(const SparseMatrix &matrix, std::vector<flo
 	int i = 0;
 	for (; i < 1000 && rLength >= 0.01f; ++i){
 		//compute aTimesP = Ap
-		tiny.runKernel(sparseMatVec, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
-			false, NULL, NULL);
+		tiny.runKernel(sparseMatVec, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange);
 		
 		//now find apDotP = p dot aTimesp (ie. p dot Ap)
 		bigDot.setArg(0, aTimesP);
 		bigDot.setArg(1, p);
 		bigDot.setArg(2, apDotpBuf);
-		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange,
-			false, NULL, NULL);
+		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange);
 		
 		//Update alpha
-		tiny.runKernel(updateAlpha, cl::NullRange, cl::NDRange(1), cl::NullRange, 
-			false, NULL, NULL);
+		tiny.runKernel(updateAlpha, cl::NullRange, cl::NDRange(1), cl::NullRange);
 
 		//update x & r, x += alpha * p & r -= alpha * atimesP
-		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
-			false, NULL, NULL);
+		tiny.runKernel(updateXR, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange);
 		
 		//Compute new value for r dot r
 		bigDot.setArg(0, r);
 		bigDot.setArg(1, r);
 		bigDot.setArg(2, rDotrBuf[1]);
-		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange,
-			false, NULL, NULL);
+		tiny.runKernel(bigDot, cl::NullRange, cl::NDRange(matrix.dim / 2), cl::NullRange);
 
 		//Update the direction
-		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange,
-			false, NULL, NULL);
+		tiny.runKernel(updateDir, cl::NullRange, cl::NDRange(matrix.dim), cl::NullRange);
 		
 		//Update oldRdotR and rLength
 		tiny.mQueue.enqueueCopyBuffer(rDotrBuf[1], rDotrBuf[0], 0, 0, sizeof(float));
 		float rdotr = 0;
-		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true, NULL, NULL);
+		tiny.readData(rDotrBuf[1], sizeof(float), &rdotr, NULL, true);
 		rLength = std::sqrtf(rdotr);
 	}
 	std::cout << "Solution took: " << i << " iterations, final residual length: " << rLength << std::endl;

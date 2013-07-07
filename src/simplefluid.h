@@ -40,6 +40,7 @@ private:
 	*/
 	void cellPos(int n, int &x, int &y) const;
 
+//TODO: Only public for testing purposes
 public:
 	CL::TinyCL tiny;
 	int dim;
