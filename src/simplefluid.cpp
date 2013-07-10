@@ -7,10 +7,23 @@
 #include "demos.h"
 #include "simplefluid.h"
 
+const std::array<glm::vec3, 8> SimpleFluid::quad = {
+	//Vertex positions
+	glm::vec3(-1.0, -1.0, 0.0),
+	glm::vec3(1.0, -1.0, 0.0),
+	glm::vec3(-1.0, 1.0, 0.0),
+	glm::vec3(1.0, 1.0, 0.0),
+	//UV coords
+	glm::vec3(0.0, 0.0, 0.0),
+	glm::vec3(1.0, 0.0, 0.0),
+	glm::vec3(0.0, 1.0, 1.0),
+	glm::vec3(1.0, 1.0, 0.0)
+};
+
 SimpleFluid::SimpleFluid(int dim)
 	//Should be interop context, but false for now since I'm just testing setting up the interaction matrix
 	//and solving it
-	: tiny(CL::DEVICE::GPU, false), dim(dim), interactionMat(generateMatrix())
+	: tiny(CL::DEVICE::GPU, true), dim(dim), interactionMat(generateMatrix())
 {
 }
 SparseMatrix SimpleFluid::generateMatrix(){

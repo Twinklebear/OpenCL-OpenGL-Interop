@@ -1,6 +1,7 @@
 #ifndef SIMPLEFLUID_H
 #define SIMPLEFLUID_H
 
+#include <glm/glm.hpp>
 #include "tinycl.h"
 #include "sparsematrix.h"
 
@@ -49,6 +50,8 @@ private:
 	CL::TinyCL tiny;
 	int dim;
 	SparseMatrix interactionMat;
+	//The quad to be used for drawing the fluid texture and velocity textures on to
+	const static std::array<glm::vec3, 8> quad;
 };
 
 #endif
