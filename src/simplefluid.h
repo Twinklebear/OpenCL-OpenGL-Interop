@@ -15,7 +15,12 @@ public:
 	* @param dim dimensions of the square grid to simulate on (dimXdim)
 	*/
 	SimpleFluid(int dim);
-	
+	/**
+	* Function to run various tests on the simple fluid instance
+	* this is really just while I'm working out the kinks and testing things individually
+	*/
+	void tests();
+
 private:
 	/**
 	* Generate the sparse matrix describing the cell-cell interactions for a 2d fluid simulation
@@ -40,8 +45,7 @@ private:
 	*/
 	void cellPos(int n, int &x, int &y) const;
 
-//TODO: Only public for testing purposes
-public:
+private:
 	CL::TinyCL tiny;
 	int dim;
 	SparseMatrix interactionMat;

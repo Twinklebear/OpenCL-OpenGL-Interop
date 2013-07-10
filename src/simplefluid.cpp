@@ -1,5 +1,10 @@
+#include <iostream>
+#include <cmath>
+#include <ctime>
+#include <chrono>
 #include "tinycl.h"
 #include "sparsematrix.h"
+#include "demos.h"
 #include "simplefluid.h"
 
 SimpleFluid::SimpleFluid(int dim)
@@ -25,6 +30,26 @@ SparseMatrix SimpleFluid::generateMatrix(){
 		elements.push_back(Element(i, cellNumber(x, y + 1), -1));
 	}
 	return SparseMatrix(elements, dim, true);
+}
+void SimpleFluid::tests(){
+	//TODO: too high a grid dimension (128) crashed my video driver, what exactly was the
+	//cause of the issue? Too much memory usage maybe?
+	//Otherwise the fluid interaction matrix seems to solve really fast (<20 iterations) even with
+	//my slower method, which is very good news
+	//TODO: I've noticed that on occasion I the solution fails for some reason and I get back
+	//1.#QNAN as the residual length so something bugs out somewhere, but I'm not sure where
+	std::srand(std::time(NULL));
+	std::vector<float> b;
+	for (int i = 0; i < interactionMat.dim; ++i)
+		b.push_back(rand());
+
+	std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+	std::vector<float> x = conjugateGradient(interactionMat, b, tiny);
+	std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+
+	std::cout << "Solving took: " 
+		<< std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count()
+		<< "ms" << std::endl;
 }
 int SimpleFluid::cellNumber(int x, int y) const {
 	//Wrap coordinates if necessary
