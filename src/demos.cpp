@@ -38,7 +38,7 @@ const std::array<unsigned short, 6> quadElems = {
 	1, 3, 2
 };
 void liveAdvectTexture(){
-	Window::Init();
+	Window::init();
 	Window window("Realtime Texture Advection");
 	//Set an fps cap
 	const float FPS = 60.0f;
@@ -56,7 +56,7 @@ void liveAdvectTexture(){
 	vao.setAttribPointer(vbo, prog.getAttribute("texIn"), 3, GL_FLOAT, GL_FALSE, 0, (void*)(sizeof(glm::vec3) * 4));
 	
 	glm::mat4 view = glm::lookAt<float>(glm::vec3(0, 0, 1), glm::vec3(0, 0, -1), glm::vec3(0, 1, 0));
-	glm::mat4 proj = glm::perspective(60.0f, (float)(window.Box().w) /  (float)(window.Box().h), 0.1f, 100.0f);
+	glm::mat4 proj = glm::perspective(60.0f, (float)(window.box().w) /  (float)(window.box().h), 0.1f, 100.0f);
 	glm::mat4 model = glm::scale(0.55f, 0.55f, 1.0f);
 	glm::mat4 mvp = proj * view * model;
 	prog.uniformMat4x4("mvp", mvp);
@@ -189,7 +189,7 @@ void liveAdvectTexture(){
 			}
 		}
 		//RENDERING
-		window.Clear();
+		window.clear();
 
 		prog.use();
 		glBindVertexArray(vao);
@@ -197,24 +197,20 @@ void liveAdvectTexture(){
 		glBindTexture(GL_TEXTURE_2D, texA);
 		glDrawElements(GL_TRIANGLES, vao.numElements(), GL_UNSIGNED_SHORT, NULL);
 
-		window.Present();
+		window.present();
 
 		//Cap fps
 		if (delta.Ticks() < 1000 / FPS)
 			SDL_Delay(1000 / FPS - delta.Ticks());
 	}
-	Window::Quit();
+	window.close();
+	Window::quit();
 }
 void openglCompute(){
 	//Note: Compute shaders are only OpenGL 4.3+ so my laptop can't run this, since
 	//it's on 4.0
-	Window::Init();
+	Window::init();
 	Window window("OpenGL Compute - Nothing will be drawn");
-	GLenum err = glewInit();
-	if (err != GLEW_OK){
-		std::cout << "Glew error: " << glewGetErrorString(err) << std::endl;
-		return;
-	}
 
 	//This shader declares local group size to be 16x16 then does nothing
 	const char *doNothingSrc = 
