@@ -60,7 +60,7 @@ cl::Buffer CL::TinyCL::buffer(MEM mem, size_t dataSize, void *data, bool blockin
 	const std::vector<cl::Event> *dependencies, cl::Event *notify)
 {
 	try {
-		cl::Buffer buf(mContext, mem, dataSize);
+		cl::Buffer buf(mContext, static_cast<cl_mem_flags>(mem), dataSize);
 		if (data != nullptr)
 			mQueue.enqueueWriteBuffer(buf, blocking, 0, dataSize, data, dependencies, notify);
 		return buf;
@@ -72,7 +72,7 @@ cl::Buffer CL::TinyCL::buffer(MEM mem, size_t dataSize, void *data, bool blockin
 	}
 }
 cl::BufferGL CL::TinyCL::bufferGL(MEM mem, GL::VertexBuffer &vbo){
-	return cl::BufferGL(mContext, mem, vbo);
+	return cl::BufferGL(mContext, static_cast<cl_mem_flags>(mem), vbo);
 }
 cl::Image2D CL::TinyCL::image2d(MEM mem, cl::ImageFormat format, int w, int h, cl::size_t<3> origin,
 	cl::size_t<3> region, void *pixels, bool blocking, const std::vector<cl::Event> *dependencies, 
@@ -83,7 +83,7 @@ cl::Image2D CL::TinyCL::image2d(MEM mem, cl::ImageFormat format, int w, int h, c
 		//Intel error, would this error be because I'm using OpenCL 1.2 vs. 1.1?
 		//the 1.1 spec makes no mention of the error CL_INVALID_IMAGE_DESCRIPTOR so I think it may be
 		//But it's only when writing to GPU? Very strange
-		cl::Image2D img(mContext, mem, format, w, h);
+		cl::Image2D img(mContext, static_cast<cl_mem_flags>(mem), format, w, h);
 		if (pixels != nullptr)
 			mQueue.enqueueWriteImage(img, blocking, origin, region, 0, 0, pixels,
 				dependencies, notify);
@@ -101,7 +101,7 @@ cl::ImageGL CL::TinyCL::imageFromTexture(MEM mem, GL::Texture &tex){
 }
 #else
 cl::Image2DGL CL::TinyCL::imageFromTexture(MEM mem, GL::Texture &tex){
-	return cl::Image2DGL(mContext, mem, GL_TEXTURE_2D, 0, tex);
+	return cl::Image2DGL(mContext, static_cast<cl_mem_flags>(mem), GL_TEXTURE_2D, 0, tex);
 }
 #endif
 void CL::TinyCL::writeData(const cl::Buffer &b, size_t dataSize, void *data, bool blocking,
@@ -153,7 +153,7 @@ void CL::TinyCL::selectDevice(DEVICE dev, bool profile){
 		//Find the first platform that is the device type we want
 		for (int i = 0; mDevices.empty(); ++i){
 			try {
-				mPlatforms.at(i).getDevices(dev, &mDevices);
+				mPlatforms.at(i).getDevices(static_cast<cl_device_type>(dev), &mDevices);
 			}
 			catch (const cl::Error &e){
 				//If the device we want isn't in this platform, keep digging
@@ -190,7 +190,7 @@ void CL::TinyCL::selectInteropDevice(DEVICE dev, bool profile){
 		//This is after all a lazy implementation
 		cl::Platform::get(&mPlatforms);
 		//Query the devices for the type desired
-		mPlatforms.at(0).getDevices(dev, &mDevices);
+		mPlatforms.at(0).getDevices(static_cast<cl_device_type>(dev), &mDevices);
 #ifdef _WIN32
 		cl_context_properties properties[] = {
 			CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),

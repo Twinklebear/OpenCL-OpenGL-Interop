@@ -12,8 +12,8 @@
 #include <gltexture.h>
 
 namespace CL {
-	enum DEVICE { CPU = CL_DEVICE_TYPE_CPU, GPU = CL_DEVICE_TYPE_GPU };
-	enum MEM { READ_ONLY = CL_MEM_READ_ONLY, WRITE_ONLY = CL_MEM_WRITE_ONLY, 
+	enum class DEVICE { CPU = CL_DEVICE_TYPE_CPU, GPU = CL_DEVICE_TYPE_GPU };
+	enum class MEM { READ_ONLY = CL_MEM_READ_ONLY, WRITE_ONLY = CL_MEM_WRITE_ONLY, 
 		READ_WRITE = CL_MEM_READ_WRITE };
 	/**
 	* A lightweight wrapper for dealing with simple OpenCL contexts
