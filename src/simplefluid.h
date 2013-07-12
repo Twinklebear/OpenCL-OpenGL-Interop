@@ -2,6 +2,7 @@
 #define SIMPLEFLUID_H
 
 #include <glm/glm.hpp>
+#include <window.h>
 #include "tinycl.h"
 #include "sparsematrix.h"
 
@@ -13,14 +14,17 @@ public:
 	/**
 	* Create the simulation, specifying the dimensions for the simulation grid
 	* the class will instantiate its own CL GPU context
-	* @param dim dimensions of the square grid to simulate on (dimXdim)
+	* @param dim Dimensions of the square grid to simulate on (dimXdim)
+	* @param window Window to draw the simulation too
 	*/
-	SimpleFluid(int dim);
+	SimpleFluid(int dim, Window &window);
 	/**
 	* Function to run various tests on the simple fluid instance
 	* this is really just while I'm working out the kinks and testing things individually
 	*/
 	void tests();
+	//Function to test the velocity field advection
+	void testVelocityField();
 
 private:
 	/**
@@ -50,8 +54,12 @@ private:
 	CL::TinyCL tiny;
 	int dim;
 	SparseMatrix interactionMat;
+	//The window being drawn too
+	Window &window;
 	//The quad to be used for drawing the fluid texture and velocity textures on to
 	const static std::array<glm::vec3, 8> quad;
+	//The element buffer to draw the quad
+	const static std::array<unsigned short, 6> quadElems;
 };
 
 #endif

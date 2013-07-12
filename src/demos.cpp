@@ -194,6 +194,7 @@ void liveAdvectTexture(){
 		prog.use();
 		glBindVertexArray(vao);
 		glActiveTexture(GL_TEXTURE0);
+		//Shouldn't we be drawing active here?
 		glBindTexture(GL_TEXTURE_2D, texA);
 		glDrawElements(GL_TRIANGLES, vao.numElements(), GL_UNSIGNED_SHORT, NULL);
 

@@ -18,16 +18,6 @@ __kernel void simpleAdvect(float dt, __constant float2 *vel, read_only image2d_t
 	if (x_n.x > 0.5f)
 		v.y = -v.y;
 
-	
-	//TODO: Some issue exists with the math that causes +velocity to go much
-	//faster than -velocity
-	//Perform RK2 to traceback the "start" position of this pixel
-	// x(t) = x + vt
-	// dx/dt = v
-	//What about this method?
-	//float2 k_1 = dt * (*vel);
-	//float2 k_2 = dt * (*vel + k_1 / 2.0f);
-	//float2 x_nS = x_n - k_2;
 	//Is this RK2 or the version in advect correct? will have to check with book
 	float2 x_nHalf = x_n - 0.5f * dt * v;//(*vel);
 	float2 x_nS = x_nHalf - dt * v;//(*vel);
