@@ -30,15 +30,16 @@ __kernel void advectImageField(float dt, read_only image2d_t velocity, read_only
 	* Because the grid is square the offsets for these reads is the same
 	* I think we also need an additional offset of 1 pixel in y since 0 starts
 	* at the bottom left of the image, and the 34th row is junk
-	* Note: Even with this offset, I'm not sure things are as I expect them to be
+	* TODO: The offsets still aren't right.
 	*/
 	float vOffset = 0.5f / convert_float2(get_image_width(velocity));
 	float zero = 126.f / 255.f;
 	//Read the initial velocity values from the velocity image and take the first step
-	float2 vPos = (pos + (float2)(0.5f, 1.5f)) / convert_float2(get_image_dim(velocity));
+	float2 vPos = (pos + (float2)(0.5f, 0.5f)) / convert_float2(get_image_dim(velocity));
 	float2 vel;
-	vel.x = read_imagef(velocity, linear, vPos + (float2)(vOffset, 0.f)).x - zero;
-	vel.y = read_imagef(velocity, linear, vPos + (float2)(0.f, vOffset)).y - zero;
+	vel = read_imagef(velocity, linear, vPos + (float2)(vOffset, vOffset)).xy - (float2)(zero, zero);
+	//vel.x = read_imagef(velocity, linear, vPos + (float2)(vOffset, 0.f)).x - zero;
+	//vel.y = read_imagef(velocity, linear, vPos + (float2)(0.f, vOffset)).y - zero;
 	//Apply some scaling so we can go faster
 	vel = vel * VSCALE;
 	//TODO: Is this integration method outlined in the book really RK2? Or is it some tweaked version?
@@ -47,8 +48,9 @@ __kernel void advectImageField(float dt, read_only image2d_t velocity, read_only
 
 	//Sample the velocity field again at the halfway point and take the second step
 	vPos = (pos + (float2)(0, 1)) / convert_float2(get_image_dim(velocity));
-	vel.x = read_imagef(velocity, linear, vPos + (float2)(vOffset, 0.f)).x - zero;
-	vel.y = read_imagef(velocity, linear, vPos + (float2)(0.f, vOffset)).y - zero;
+	vel = read_imagef(velocity, linear, vPos + (float2)(vOffset, vOffset)).xy - (float2)(zero, zero);
+	//vel.x = read_imagef(velocity, linear, vPos + (float2)(vOffset, 0.f)).x - zero;
+	//vel.y = read_imagef(velocity, linear, vPos + (float2)(0.f, vOffset)).y - zero;
 	vel = vel * VSCALE;
 	pos = pos - dt * vel;
 
